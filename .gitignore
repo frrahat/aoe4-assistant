@@ -1,0 +1,6 @@
+images
+recorder/config.txt
+.venv
+*.exe
+*.obj
+*.pdb

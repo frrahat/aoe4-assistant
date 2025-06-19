@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Streamer</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+        .centered { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        .image-container { position: relative; display: flex; align-items: center; justify-content: center; }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            z-index: 2;
+        }
+        img { max-width: 100%; max-height: 80vh; border-radius: 8px; box-shadow: 0 2px 8px #0002; }
+        .error { color: red; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div id="input-page" class="centered">
+        <form id="size-form">
+            <label>Width: <input type="number" id="width" min="10" max="1000" required></label>
+            <label>Height: <input type="number" id="height" min="10" max="1000" required></label>
+            <label>X Position: <input type="number" id="x" min="0" max="10000" required></label>
+            <label>Y Position: <input type="number" id="y" min="0" max="50000" required></label>
+            <button type="submit">Start</button>
+        </form>
+        <div id="error-message" class="error" style="display:none;"></div>
+    </div>
+    <div id="image-page" class="centered" style="display:none;">
+        <div class="image-container">
+            <div class="close-btn" id="close-btn">&#10005;</div>
+            <img id="stream-img" src="" alt="Streaming...">
+        </div>
+    </div>
+    <script>
+        const form = document.getElementById('size-form');
+        const inputPage = document.getElementById('input-page');
+        const imagePage = document.getElementById('image-page');
+        const img = document.getElementById('stream-img');
+        const closeBtn = document.getElementById('close-btn');
+        const errorMessage = document.getElementById('error-message');
+        let intervalId = null;
+
+        // Load current config on page load
+        async function loadConfig() {
+            try {
+                const response = await fetch('/config');
+                const config = await response.json();
+                document.getElementById('width').value = config.width;
+                document.getElementById('height').value = config.height;
+                document.getElementById('x').value = config.x;
+                document.getElementById('y').value = config.y;
+            } catch (error) {
+                console.error('Failed to load config:', error);
+            }
+        }
+
+        loadConfig();
+
+        form.onsubmit = async function(e) {
+            e.preventDefault();
+            const width = parseInt(document.getElementById('width').value);
+            const height = parseInt(document.getElementById('height').value);
+            const x = parseInt(document.getElementById('x').value);
+            const y = parseInt(document.getElementById('y').value);
+            
+            try {
+                const response = await fetch('/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ width, height, x, y })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    errorMessage.style.display = 'none';
+                    inputPage.style.display = 'none';
+                    imagePage.style.display = 'flex';
+                    startPolling();
+                } else {
+                    errorMessage.textContent = result.error || 'Failed to update config';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Network error: ' + error.message;
+                errorMessage.style.display = 'block';
+            }
+        };
+
+        closeBtn.onclick = function() {
+            stopPolling();
+            imagePage.style.display = 'none';
+            inputPage.style.display = 'flex';
+        };
+
+        function startPolling() {
+            fetchAndUpdate();
+            intervalId = setInterval(fetchAndUpdate, 2000);
+        }
+        
+        function stopPolling() {
+            if (intervalId) clearInterval(intervalId);
+        }
+        
+        function fetchAndUpdate() {
+            // Add a cache buster to avoid browser caching
+            img.src = `/latest-image?_=${Date.now()}`;
+        }
+    </script>
+</body>
+</html> 
