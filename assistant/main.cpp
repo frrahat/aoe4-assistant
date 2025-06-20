@@ -228,7 +228,7 @@ int main(int argc, char* argv[]) {
                     SYSTEMTIME st;
                     GetLocalTime(&st);
                     wchar_t filename[256];
-                    swprintf(filename, 256, L"../images/screenshot_%04d%02d%02d_%02d%02d%02d_%03d.png",
+                    swprintf(filename, 256, L"images/screenshot_%04d%02d%02d_%02d%02d%02d_%03d.png",
                         st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
                     if (stream > 0 && stream == static_cast<int>(i+1)) {
                         if (saveBitmapToFile(bmp, filename)) {
@@ -236,7 +236,7 @@ int main(int argc, char* argv[]) {
                         }
                         try {
                             std::vector<fs::directory_entry> screenshots;
-                            for (const auto& entry : fs::directory_iterator("../images")) {
+                            for (const auto& entry : fs::directory_iterator("images")) {
                                 if (fs::is_regular_file(entry.path())) {
                                     std::wstring fname = entry.path().filename().wstring();
                                     if (fname.find(L"screenshot_") == 0 && fname.find(L".png") == fname.length() - 4) {
