@@ -157,6 +157,39 @@ void stop_overlay_process() {
     }
 }
 
+// Function to save screenshot and clean up old screenshots
+void save_and_cleanup_screenshot(Bitmap* bmp) {
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    wchar_t filename[256];
+    swprintf(filename, 256, L"images/screenshot_%04d%02d%02d_%02d%02d%02d_%03d.png",
+        st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+
+    if (saveBitmapToFile(bmp, filename)) {
+        std::wcout << L"Screenshot saved to " << filename << std::endl;
+    }
+    try {
+        std::vector<fs::directory_entry> screenshots;
+        for (const auto& entry : fs::directory_iterator("images")) {
+            if (fs::is_regular_file(entry.path())) {
+                std::wstring fname = entry.path().filename().wstring();
+                if (fname.find(L"screenshot_") == 0 && fname.find(L".png") == fname.length() - 4) {
+                    screenshots.push_back(entry);
+                }
+            }
+        }
+        std::sort(screenshots.begin(), screenshots.end(), [](const fs::directory_entry& a, const fs::directory_entry& b) {
+            return a.path().filename().wstring() < b.path().filename().wstring();
+        });
+        while (screenshots.size() > 5) {
+            fs::remove(screenshots.front().path());
+            screenshots.erase(screenshots.begin());
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error managing old screenshots: " << e.what() << std::endl;
+    }
+}
+
 int main(int argc, char* argv[]) {
     // Parse stream argument as number
     int stream = 0;
@@ -223,44 +256,18 @@ int main(int argc, char* argv[]) {
             auto bitmaps = captureMultipleRectangles(rects);
             for (size_t i = 0; i < bitmaps.size(); ++i) {
                 Bitmap* bmp = bitmaps[i];
-                if (bmp) {
-                    matchImage(bmp);
-                    SYSTEMTIME st;
-                    GetLocalTime(&st);
-                    wchar_t filename[256];
-                    swprintf(filename, 256, L"images/screenshot_%04d%02d%02d_%02d%02d%02d_%03d.png",
-                        st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
-                    if (stream > 0 && stream == static_cast<int>(i+1)) {
-                        if (saveBitmapToFile(bmp, filename)) {
-                            std::wcout << L"Screenshot saved to " << filename << std::endl;
-                        }
-                        try {
-                            std::vector<fs::directory_entry> screenshots;
-                            for (const auto& entry : fs::directory_iterator("images")) {
-                                if (fs::is_regular_file(entry.path())) {
-                                    std::wstring fname = entry.path().filename().wstring();
-                                    if (fname.find(L"screenshot_") == 0 && fname.find(L".png") == fname.length() - 4) {
-                                        screenshots.push_back(entry);
-                                    }
-                                }
-                            }
-                            std::sort(screenshots.begin(), screenshots.end(), [](const fs::directory_entry& a, const fs::directory_entry& b) {
-                                return a.path().filename().wstring() < b.path().filename().wstring();
-                            });
-                            while (screenshots.size() > 5) {
-                                fs::remove(screenshots.front().path());
-                                screenshots.erase(screenshots.begin());
-                            }
-                        } catch (const std::exception& e) {
-                            std::cerr << "Error managing old screenshots: " << e.what() << std::endl;
-                        }
-                    }
-                    std::string ts = get_elapsed_timestamp(recording_start);
-                    send_overlay_message(ts, "#00bfff", "📸 Screenshot taken!");
-                    delete bmp;
+                if (!bmp) continue;
+
+                matchImage(bmp);
+                
+                if (stream > 0 && stream == static_cast<int>(i+1)) {
+                    save_and_cleanup_screenshot(bmp);
                 }
+                std::string ts = get_elapsed_timestamp(recording_start);
+                send_overlay_message(ts, "#00bfff", "📸 Screenshot taken!");
+                delete bmp;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(config.interval_ms));
+            std::this_thread::sleep_for(std::chrono::milliseconds(recParams.config.interval_ms));
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
