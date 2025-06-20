@@ -56,6 +56,28 @@ Config readConfig(const std::string& filename) {
     return config;
 }
 
+// Add a struct to hold both screen size and config
+struct RecordingParams {
+    int screenWidth;
+    int screenHeight;
+    Config config;
+};
+
+// Function to get screen size and config
+RecordingParams getRecordingParams() {
+    RecordingParams params;
+    params.screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    params.screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    params.config = readConfig("config.txt");
+    std::cout << "Current screen size: " << params.screenWidth << "x" << params.screenHeight << std::endl;
+    std::cout << "Using config: interval=" << params.config.interval_ms
+              << "ms, width=" << params.config.width
+              << ", height=" << params.config.height
+              << ", x=" << params.config.x
+              << ", y=" << params.config.y << std::endl;
+    return params;
+}
+
 int main(int argc, char* argv[]) {
     std::cout << "Starting screen recorder. Press Numpad '*' to start/stop recording.\n" << std::endl;
 
@@ -70,6 +92,7 @@ int main(int argc, char* argv[]) {
 
     MSG msg = {0};
     bool isRecording = false;
+    RecordingParams recParams; // Holds screen size and config
     while (true) {
         // Check for hotkey
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -77,26 +100,18 @@ int main(int argc, char* argv[]) {
                 isRecording = !isRecording;
                 if (isRecording) {
                     std::cout << "Recording started. Press Numpad '*' to stop." << std::endl;
+                    recParams = getRecordingParams(); // Only update when starting recording
                 } else {
                     std::cout << "Recording stopped. Press Numpad '*' to start." << std::endl;
                 }
             }
         }
         if (isRecording) {
-            // Re-query screen size each time
-            int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-            int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-            std::cout << "Current screen size: " << screenWidth << "x" << screenHeight << std::endl;
+            // Use recParams.screenWidth, recParams.screenHeight, recParams.config
+            int screenWidth = recParams.screenWidth;
+            int screenHeight = recParams.screenHeight;
+            Config config = recParams.config;
             
-            // Read config on each iteration for real-time updates
-            Config config = readConfig("config.txt");
-            
-            std::cout << "Using config: interval=" << config.interval_ms 
-                      << "ms, width=" << config.width 
-                      << ", height=" << config.height
-                      << ", x=" << config.x
-                      << ", y=" << config.y << std::endl;
-
             // Use configured x,y coordinates for capture area
             int x = config.x;
             int y = config.y;

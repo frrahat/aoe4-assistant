@@ -1,4 +1,5 @@
 images
+build
 recorder/config.txt
 .venv
 *.exe
