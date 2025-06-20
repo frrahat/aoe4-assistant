@@ -47,5 +47,8 @@ int wmain() {
         delete bmp;
     }
     GdiplusShutdown(gdiplusToken);
+
+    std::wcout << L"\nPress any key to exit..." << std::endl;
+    _getwch();
     return 0;
 } 
