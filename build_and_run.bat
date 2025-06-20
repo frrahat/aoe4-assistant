@@ -10,6 +10,7 @@ REM Only .cpp files are compiled; .h files are for declarations only
 if not exist build mkdir build
 pushd build
 cl.exe /EHsc ../assistant/main.cpp ../recorder/recorder.cpp ../matcher/matcher.cpp /I../ /Fe:aoe4_assistant.exe /link gdiplus.lib user32.lib gdi32.lib
+cl.exe /EHsc ../overlay/overlay.cpp /I../ /Fe:overlay.exe /link user32.lib gdi32.lib
 popd
 
 REM Run the main executable

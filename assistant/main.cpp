@@ -1,4 +1,6 @@
 #define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <windows.h>
 #include <gdiplus.h>
 #include <iostream>
@@ -10,6 +12,7 @@
 #include <algorithm>
 #include <cwchar>
 #include <fstream>
+#pragma comment(lib, "ws2_32.lib")
 #include "../recorder/recorder.h"
 #include "../matcher/matcher.h"
 
@@ -78,13 +81,68 @@ bool saveBitmapToFile(Bitmap* bmp, const std::wstring& filename) {
     return bmp->Save(filename.c_str(), &pngClsid, NULL) == Ok;
 }
 
+// Helper to send a message to the overlay
+void send_overlay_message(const std::string& timestamp, const std::string& color, const std::string& text) {
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) return;
+    SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (sock == INVALID_SOCKET) { WSACleanup(); return; }
+    sockaddr_in addr = {0};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    addr.sin_port = htons(50505);
+    if (connect(sock, (sockaddr*)&addr, sizeof(addr)) == 0) {
+        std::string msg = timestamp + "|" + color + "|" + text;
+        send(sock, msg.c_str(), (int)msg.size(), 0);
+    }
+    closesocket(sock);
+    WSACleanup();
+}
+
+// Helper to get mm:ss timestamp since start
+std::string get_elapsed_timestamp(const std::chrono::steady_clock::time_point& start) {
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start).count();
+    int minutes = (int)(elapsed / 60);
+    int seconds = (int)(elapsed % 60);
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%02d:%02d", minutes, seconds);
+    return std::string(buf);
+}
+
+// Overlay process management
+HANDLE g_overlayProcess = NULL;
+void start_overlay_process(int x, int y) {
+    if (g_overlayProcess) return; // Already running
+    std::wstring cmd = L"build\\overlay.exe " + std::to_wstring(x) + L" " + std::to_wstring(y);
+    STARTUPINFOW si = { sizeof(si) };
+    PROCESS_INFORMATION pi;
+    if (CreateProcessW(
+            NULL,
+            &cmd[0],
+            NULL, NULL, FALSE,
+            CREATE_NO_WINDOW,
+            NULL, NULL,
+            &si, &pi)) {
+        g_overlayProcess = pi.hProcess;
+        CloseHandle(pi.hThread);
+    }
+}
+void stop_overlay_process() {
+    if (g_overlayProcess) {
+        TerminateProcess(g_overlayProcess, 0);
+        CloseHandle(g_overlayProcess);
+        g_overlayProcess = NULL;
+    }
+}
+
 int main(int argc, char* argv[]) {
     // Parse stream argument
     bool stream = false;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg.find("--stream=") == 0) {
-            std::string val = arg.substr(16);
+            std::string val = arg.substr(9);
             stream = (val == "1" || val == "true" || val == "True");
         }
     }
@@ -102,6 +160,7 @@ int main(int argc, char* argv[]) {
     MSG msg = {0};
     bool isRecording = false;
     RecordingParams recParams;
+    std::chrono::steady_clock::time_point recording_start;
     while (true) {
         // Check for hotkey
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -112,8 +171,14 @@ int main(int argc, char* argv[]) {
                     recParams = getRecordingParams();
                     std::cout << "Recording params: " << recParams.screenWidth << "x" << recParams.screenHeight << std::endl;
                     std::cout << "Config: " << recParams.config.interval_ms << "ms, " << recParams.config.width << "x" << recParams.config.height << " at " << recParams.config.x << "," << recParams.config.y << std::endl;
+                    recording_start = std::chrono::steady_clock::now();
+                    start_overlay_process(50, 400);
+                    send_overlay_message("00:00", "#ffcc00", "🔥 Recording started!");
                 } else {
                     std::cout << "Recording stopped. Press Numpad '*' to start." << std::endl;
+                    std::string ts = get_elapsed_timestamp(recording_start);
+                    send_overlay_message(ts, "#cccccc", "⏹️ Recording stopped.");
+                    stop_overlay_process();
                 }
             }
         }
@@ -165,6 +230,9 @@ int main(int argc, char* argv[]) {
                         std::cerr << "Error managing old screenshots: " << e.what() << std::endl;
                     }
                 }
+                // Example: send a message for each screenshot
+                std::string ts = get_elapsed_timestamp(recording_start);
+                send_overlay_message(ts, "#00bfff", "📸 Screenshot taken!");
                 delete bmp;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(config.interval_ms));
