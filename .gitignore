@@ -1,6 +1,6 @@
 images
 build
-recorder/config.txt
+assistant/config.txt
 .venv
 *.exe
 *.obj
