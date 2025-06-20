@@ -1,3 +1,4 @@
+#include <ostream>
 #define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -224,15 +225,21 @@ int main(int argc, char* argv[]) {
                     std::cout << "Recording started. Press Numpad '*' to stop." << std::endl;
                     bool shouldReadFromFile = stream > 0;
                     recParams = getRecordingParams(shouldReadFromFile);
+                    std::cout << "Screen Dimension: " << recParams.screenWidth << "x" << recParams.screenHeight << std::endl; 
                     std::cout << "Config: " << recParams.config.interval_ms << "ms, " << recParams.config.search_rectangles.size() << " rectangles" << std::endl;
+                    for (const auto& rect: recParams.config.search_rectangles) {
+                        std::cout << "Search rectangle: " << rect.name << " (" << rect.x << "," << rect.y << "," << rect.width << "," << rect.height << ")" << std::endl;
+                    }
                     recording_start = std::chrono::steady_clock::now();
-                    start_overlay_process(50, 400);
-                    send_overlay_message("00:00", "#ffcc00", "🔥 Recording started!");
+                    // start_overlay_process(10, 200);
+                    // send_overlay_message("00:00", "#ffcc00", "🔥 Recording started!");
+                    MessageBeep(MB_OK); // Play an alarming sound
                 } else {
                     std::cout << "Recording stopped. Press Numpad '*' to start." << std::endl;
-                    std::string ts = get_elapsed_timestamp(recording_start);
-                    send_overlay_message(ts, "#cccccc", "⏹️ Recording stopped.");
-                    stop_overlay_process();
+                    // std::string ts = get_elapsed_timestamp(recording_start);
+                    // send_overlay_message(ts, "#cccccc", "⏹️ Recording stopped.");
+                    // stop_overlay_process();
+                    MessageBeep(MB_CANCELTRYCONTINUE); // Play an alarming sound
                 }
             }
         }
@@ -264,8 +271,9 @@ int main(int argc, char* argv[]) {
                         {
                             int result = checkVillagerProduction(bmp);
                             if (result == 0) {
-                                std::string ts = get_elapsed_timestamp(recording_start);
-                                send_overlay_message(ts, "#ffffff", "❌ No villager in production queue");
+                                // std::string ts = get_elapsed_timestamp(recording_start);
+                                MessageBeep(MB_ICONHAND); // Play an alarming sound
+                                // send_overlay_message(ts, "#ffffff", "❌ No villager in production queue");
                             }
                         }
                         break;
@@ -275,7 +283,7 @@ int main(int argc, char* argv[]) {
                     save_and_cleanup_screenshot(bmp);
                 }
                 std::string ts = get_elapsed_timestamp(recording_start);
-                send_overlay_message(ts, "#00bfff", "📸 Screenshot taken!");
+                // send_overlay_message(ts, "#00bfff", "📸 Screenshot taken!");
                 delete bmp;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(recParams.config.interval_ms));
