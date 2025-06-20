@@ -15,8 +15,8 @@
 #include <sstream>
 #pragma comment(lib, "ws2_32.lib")
 #include "../recorder/recorder.h"
-#include "../matcher/matcher.h"
 #include "../third_party/json.hpp"
+#include "villager_production_checker/villager_production_checker.h"
 
 using json = nlohmann::json;
 
@@ -258,7 +258,18 @@ int main(int argc, char* argv[]) {
                 Bitmap* bmp = bitmaps[i];
                 if (!bmp) continue;
 
-                matchImage(bmp);
+                switch (i) {
+                    case 0:
+                        assert(config.search_rectangles[i].name == "villager_production_checker");
+                        {
+                            int result = checkVillagerProduction(bmp);
+                            if (result == 0) {
+                                std::string ts = get_elapsed_timestamp(recording_start);
+                                send_overlay_message(ts, "#ffffff", "❌ No villager in production queue");
+                            }
+                        }
+                        break;
+                }
                 
                 if (stream > 0 && stream == static_cast<int>(i+1)) {
                     save_and_cleanup_screenshot(bmp);

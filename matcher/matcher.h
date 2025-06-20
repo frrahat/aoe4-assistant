@@ -1,4 +1,4 @@
 #pragma once
 #include <windows.h>
 #include <gdiplus.h>
-void matchImage(Gdiplus::Bitmap* bmp); 
+bool matchImage(Gdiplus::Bitmap* bmp, Gdiplus::Bitmap* templ); 
