@@ -12,35 +12,50 @@
 #include <algorithm>
 #include <cwchar>
 #include <fstream>
+#include <sstream>
 #pragma comment(lib, "ws2_32.lib")
 #include "../recorder/recorder.h"
 #include "../matcher/matcher.h"
+#include "../third_party/json.hpp"
+
+using json = nlohmann::json;
 
 namespace fs = std::experimental::filesystem;
 using namespace Gdiplus;
 
-struct Config {
-    int interval_ms;
+struct SearchRectangle {
+    std::string name;
     int width;
     int height;
     int x;
     int y;
 };
 
+struct Config {
+    int interval_ms;
+    std::vector<SearchRectangle> search_rectangles;
+};
+
 Config readConfig(const std::string& filename) {
-    Config config = {1000, 800, 600, 0, 0};
+    Config config;
+    config.interval_ms = 1000;
     std::ifstream file(filename);
-    std::string line;
-    while (std::getline(file, line)) {
-        size_t pos = line.find('=');
-        if (pos != std::string::npos) {
-            std::string key = line.substr(0, pos);
-            std::string value = line.substr(pos + 1);
-            if (key == "interval_ms") config.interval_ms = std::stoi(value);
-            else if (key == "width") config.width = std::stoi(value);
-            else if (key == "height") config.height = std::stoi(value);
-            else if (key == "x") config.x = std::stoi(value);
-            else if (key == "y") config.y = std::stoi(value);
+    if (!file) {
+        std::cout << "Config file not found: " << filename << std::endl;
+        throw std::runtime_error("Config file not found: " + filename);
+    }
+    json j;
+    file >> j;
+    config.interval_ms = j.value("interval_ms", 1000);
+    if (j.contains("search_rectangles")) {
+        for (const auto& rect : j["search_rectangles"]) {
+            SearchRectangle sr;
+            sr.name = rect.value("name", "");
+            sr.width = rect.value("width", 0);
+            sr.height = rect.value("height", 0);
+            sr.x = rect.value("x", 0);
+            sr.y = rect.value("y", 0);
+            config.search_rectangles.push_back(sr);
         }
     }
     return config;
@@ -52,11 +67,17 @@ struct RecordingParams {
     Config config;
 };
 
-RecordingParams getRecordingParams() {
+RecordingParams getRecordingParams(bool shouldReadFromFile) {
     RecordingParams params;
     params.screenWidth = GetSystemMetrics(SM_CXSCREEN);
     params.screenHeight = GetSystemMetrics(SM_CYSCREEN);
-    params.config = readConfig("config.txt");
+    if (shouldReadFromFile) {
+        params.config = readConfig("assistant/config.json");
+    } else {
+        params.config = Config {1000, {
+            SearchRectangle { "villager_production_checker", 300, 36, 11, 733 }
+        }};
+    }
     return params;
 }
 
@@ -137,13 +158,13 @@ void stop_overlay_process() {
 }
 
 int main(int argc, char* argv[]) {
-    // Parse stream argument
-    bool stream = false;
+    // Parse stream argument as number
+    int stream = 0;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg.find("--stream=") == 0) {
             std::string val = arg.substr(9);
-            stream = (val == "1" || val == "true" || val == "True");
+            try { stream = std::stoi(val); } catch (...) { stream = 0; }
         }
     }
 
@@ -168,9 +189,9 @@ int main(int argc, char* argv[]) {
                 isRecording = !isRecording;
                 if (isRecording) {
                     std::cout << "Recording started. Press Numpad '*' to stop." << std::endl;
-                    recParams = getRecordingParams();
-                    std::cout << "Recording params: " << recParams.screenWidth << "x" << recParams.screenHeight << std::endl;
-                    std::cout << "Config: " << recParams.config.interval_ms << "ms, " << recParams.config.width << "x" << recParams.config.height << " at " << recParams.config.x << "," << recParams.config.y << std::endl;
+                    bool shouldReadFromFile = stream > 0;
+                    recParams = getRecordingParams(shouldReadFromFile);
+                    std::cout << "Config: " << recParams.config.interval_ms << "ms, " << recParams.config.search_rectangles.size() << " rectangles" << std::endl;
                     recording_start = std::chrono::steady_clock::now();
                     start_overlay_process(50, 400);
                     send_overlay_message("00:00", "#ffcc00", "🔥 Recording started!");
@@ -186,54 +207,58 @@ int main(int argc, char* argv[]) {
             int screenWidth = recParams.screenWidth;
             int screenHeight = recParams.screenHeight;
             Config config = recParams.config;
-            int x = config.x;
-            int y = config.y;
-            if (x < 0) x = 0;
-            if (y < 0) y = 0;
-            if (x + config.width > screenWidth) config.width = screenWidth - x;
-            if (y + config.height > screenHeight) config.height = screenHeight - y;
-
-            // Capture screen
-            Bitmap* bmp = captureScreen(x, y, config.width, config.height);
-            if (bmp) {
-                // Call matcher
-                matchImage(bmp);
-                // Save image if stream
-                if (stream) {
+            std::vector<RECT> rects;
+            for (const auto& rect : config.search_rectangles) {
+                int x = rect.x;
+                int y = rect.y;
+                int width = rect.width;
+                int height = rect.height;
+                if (x < 0) x = 0;
+                if (y < 0) y = 0;
+                if (x + width > screenWidth) width = screenWidth - x;
+                if (y + height > screenHeight) height = screenHeight - y;
+                RECT r = { x, y, x + width, y + height };
+                rects.push_back(r);
+            }
+            auto bitmaps = captureMultipleRectangles(rects);
+            for (size_t i = 0; i < bitmaps.size(); ++i) {
+                Bitmap* bmp = bitmaps[i];
+                if (bmp) {
+                    matchImage(bmp);
                     SYSTEMTIME st;
                     GetLocalTime(&st);
                     wchar_t filename[256];
                     swprintf(filename, 256, L"../images/screenshot_%04d%02d%02d_%02d%02d%02d_%03d.png",
                         st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
-                    if (saveBitmapToFile(bmp, filename)) {
-                        std::wcout << L"Screenshot saved to " << filename << std::endl;
-                    }
-                    // Keep only the 5 most recent screenshots
-                    try {
-                        std::vector<fs::directory_entry> screenshots;
-                        for (const auto& entry : fs::directory_iterator("../images")) {
-                            if (fs::is_regular_file(entry.path())) {
-                                std::wstring fname = entry.path().filename().wstring();
-                                if (fname.find(L"screenshot_") == 0 && fname.find(L".png") == fname.length() - 4) {
-                                    screenshots.push_back(entry);
+                    if (stream > 0 && stream == static_cast<int>(i+1)) {
+                        if (saveBitmapToFile(bmp, filename)) {
+                            std::wcout << L"Screenshot saved to " << filename << std::endl;
+                        }
+                        try {
+                            std::vector<fs::directory_entry> screenshots;
+                            for (const auto& entry : fs::directory_iterator("../images")) {
+                                if (fs::is_regular_file(entry.path())) {
+                                    std::wstring fname = entry.path().filename().wstring();
+                                    if (fname.find(L"screenshot_") == 0 && fname.find(L".png") == fname.length() - 4) {
+                                        screenshots.push_back(entry);
+                                    }
                                 }
                             }
+                            std::sort(screenshots.begin(), screenshots.end(), [](const fs::directory_entry& a, const fs::directory_entry& b) {
+                                return a.path().filename().wstring() < b.path().filename().wstring();
+                            });
+                            while (screenshots.size() > 5) {
+                                fs::remove(screenshots.front().path());
+                                screenshots.erase(screenshots.begin());
+                            }
+                        } catch (const std::exception& e) {
+                            std::cerr << "Error managing old screenshots: " << e.what() << std::endl;
                         }
-                        std::sort(screenshots.begin(), screenshots.end(), [](const fs::directory_entry& a, const fs::directory_entry& b) {
-                            return a.path().filename().wstring() < b.path().filename().wstring();
-                        });
-                        while (screenshots.size() > 5) {
-                            fs::remove(screenshots.front().path());
-                            screenshots.erase(screenshots.begin());
-                        }
-                    } catch (const std::exception& e) {
-                        std::cerr << "Error managing old screenshots: " << e.what() << std::endl;
                     }
+                    std::string ts = get_elapsed_timestamp(recording_start);
+                    send_overlay_message(ts, "#00bfff", "📸 Screenshot taken!");
+                    delete bmp;
                 }
-                // Example: send a message for each screenshot
-                std::string ts = get_elapsed_timestamp(recording_start);
-                send_overlay_message(ts, "#00bfff", "📸 Screenshot taken!");
-                delete bmp;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(config.interval_ms));
         } else {

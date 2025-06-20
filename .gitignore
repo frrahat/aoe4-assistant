@@ -1,6 +1,6 @@
 images
 build
-assistant/config.txt
+assistant/config.json
 .venv
 *.exe
 *.obj

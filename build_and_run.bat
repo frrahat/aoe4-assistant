@@ -2,7 +2,7 @@
 setlocal
 
 REM Parse argument
-set stream=false
+set stream=0
 if not "%1"=="" set stream=%1
 
 REM Build the project
@@ -13,11 +13,10 @@ cl.exe /EHsc ../assistant/main.cpp ../recorder/recorder.cpp ../matcher/matcher.c
 cl.exe /EHsc ../overlay/overlay.cpp /I../ /Fe:overlay.exe /link user32.lib gdi32.lib
 popd
 
-REM Run the main executable
-if "%stream%"=="true" (
-    build\aoe4_assistant.exe --stream=true
-    REM Start the streamer server
-    .venv\Scripts\python.exe streamer\server\server.py
-) else (
-    build\aoe4_assistant.exe --stream=false
+REM Start the streamer server only if stream is > 0 (run in background)
+if %stream% GTR 0 (
+    start "" .venv\Scripts\python.exe streamer\server\server.py --stream=%stream%
 )
+
+REM Run the main executable
+build\aoe4_assistant.exe --stream=%stream%
