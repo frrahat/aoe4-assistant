@@ -228,7 +228,7 @@ int main(int argc, char* argv[]) {
     MSG msg = {0};
     bool isRecording = false;
     RecordingParams recParams;
-    std::chrono::steady_clock::time_point recording_start;
+
     while (true) {
         // Check for hotkey
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -242,15 +242,9 @@ int main(int argc, char* argv[]) {
                         recParams = getRecordingParams(isDevMode);
                         printRecordingParams(recParams);
                     }
-                    recording_start = std::chrono::steady_clock::now();
-                    // start_overlay_process(10, 200);
-                    // send_overlay_message("00:00", "#ffcc00", "🔥 Recording started!");
                     MessageBeep(MB_OK); // Play an alarming sound
                 } else {
                     std::cout << "Recording stopped. Press Numpad '*' to start." << std::endl;
-                    // std::string ts = get_elapsed_timestamp(recording_start);
-                    // send_overlay_message(ts, "#cccccc", "⏹️ Recording stopped.");
-                    // stop_overlay_process();
                     MessageBeep(MB_CANCELTRYCONTINUE); // Play an alarming sound
                 }
             }
@@ -289,9 +283,7 @@ int main(int argc, char* argv[]) {
                         {
                             int result = checkVillagerProduction(bmp);
                             if (result == 0) {
-                                // std::string ts = get_elapsed_timestamp(recording_start);
                                 MessageBeep(MB_ICONHAND); // Play an alarming sound
-                                // send_overlay_message(ts, "#ffffff", "❌ No villager in production queue");
                             }
                         }
                         break;
@@ -300,8 +292,6 @@ int main(int argc, char* argv[]) {
                 if (stream > 0 && stream == static_cast<int>(i+1)) {
                     save_and_cleanup_screenshot(bmp);
                 }
-                std::string ts = get_elapsed_timestamp(recording_start);
-                // send_overlay_message(ts, "#00bfff", "📸 Screenshot taken!");
                 delete bmp;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(recParams.config.interval_ms));
