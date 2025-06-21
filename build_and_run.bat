@@ -44,6 +44,10 @@ if %stream% GTR 0 (
     start "" .venv\Scripts\python.exe streamer\server\server.py --stream=%stream%
 )
 
+REM Copy the dll file from bin (Necessary when running exe in different env)
+copy %OPENCV_BIN%\opencv_world4110.dll .\build\ >nul 2>&1
+
+
 REM Run the main executable
 build\aoe4_assistant.exe --stream=%stream%
 
