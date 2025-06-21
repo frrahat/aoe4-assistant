@@ -22,7 +22,7 @@ DEFAULT_CONFIG = {
 
 def get_config_path():
     here = Path(__file__).resolve().parent
-    return (here.parent.parent / 'assistant' / 'config.json').resolve()
+    return (here.parent.parent / 'temp' / 'config.json').resolve()
 
 def read_config():
     try:
@@ -43,7 +43,14 @@ def index():
 @app.route('/config', methods=['GET', 'POST'])
 def config():
     if request.method == 'GET':
-        return jsonify(read_config())
+        config = read_config()
+        search_rectange = config['search_rectangles'][STREAM_INDEX]
+        return jsonify({
+            "width": search_rectange['width'],
+            "height": search_rectange['height'],
+            "x": search_rectange['x'],
+            "y": search_rectange['y'],
+        })
     elif request.method == 'POST':
         data = request.get_json()
         width = data.get('width')
@@ -70,7 +77,7 @@ def config():
 
 @app.route('/latest-image')
 def latest_image():
-    config = read_config()
+    # config = read_config()
     folder = Path(IMAGE_FOLDER)
     if not folder.exists() or not any(folder.iterdir()):
         abort(404)

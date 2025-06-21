@@ -5,84 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Streamer</title>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
-        .centered { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        .image-container { position: relative; display: flex; align-items: center; justify-content: center; }
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 20px;
-            z-index: 2;
-        }
+        body { font-family: sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
+        .container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; align-items: center; }
+        .image-container { position: relative; }
         img { max-width: 100%; max-height: 80vh; border-radius: 8px; box-shadow: 0 2px 8px #0002; }
         .error { color: red; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <div id="input-page" class="centered">
-        <form id="size-form">
+    <div class="container">
+        <div class="controls">
             <label>Width: <input type="number" id="width" min="10" max="1000" required></label>
             <label>Height: <input type="number" id="height" min="10" max="1000" required></label>
             <label>X Position: <input type="number" id="x" min="0" max="10000" required></label>
             <label>Y Position: <input type="number" id="y" min="0" max="50000" required></label>
-            <button type="submit">Start</button>
-        </form>
+        </div>
         <div id="error-message" class="error" style="display:none;"></div>
-    </div>
-    <div id="image-page" class="centered" style="display:none;">
         <div class="image-container">
-            <div class="close-btn" id="close-btn">&#10005;</div>
             <img id="stream-img" src="" alt="Streaming...">
         </div>
     </div>
     <script>
-        const form = document.getElementById('size-form');
-        const inputPage = document.getElementById('input-page');
-        const imagePage = document.getElementById('image-page');
+        const widthInput = document.getElementById('width');
+        const heightInput = document.getElementById('height');
+        const xInput = document.getElementById('x');
+        const yInput = document.getElementById('y');
         const img = document.getElementById('stream-img');
-        const closeBtn = document.getElementById('close-btn');
         const errorMessage = document.getElementById('error-message');
         let intervalId = null;
 
-        // Load current config on page load
-        async function loadConfig() {
-            try {
-                const response = await fetch('/config');
-                const config = await response.json();
-                document.getElementById('width').value = config.width;
-                document.getElementById('height').value = config.height;
-                document.getElementById('x').value = config.x;
-                document.getElementById('y').value = config.y;
-            } catch (error) {
-                console.error('Failed to load config:', error);
-            }
-        }
-
-        loadConfig();
-
-        form.onsubmit = async function(e) {
-            e.preventDefault();
-            const width = parseInt(document.getElementById('width').value);
-            const height = parseInt(document.getElementById('height').value);
-            const x = parseInt(document.getElementById('x').value);
-            const y = parseInt(document.getElementById('y').value);
+        async function updateConfig() {
+            const width = parseInt(widthInput.value);
+            const height = parseInt(heightInput.value);
+            const x = parseInt(xInput.value);
+            const y = parseInt(yInput.value);
             
             try {
                 const response = await fetch('/config', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ width, height, x, y })
                 });
                 
@@ -90,9 +52,6 @@
                 
                 if (response.ok) {
                     errorMessage.style.display = 'none';
-                    inputPage.style.display = 'none';
-                    imagePage.style.display = 'flex';
-                    startPolling();
                 } else {
                     errorMessage.textContent = result.error || 'Failed to update config';
                     errorMessage.style.display = 'block';
@@ -101,27 +60,46 @@
                 errorMessage.textContent = 'Network error: ' + error.message;
                 errorMessage.style.display = 'block';
             }
-        };
+        }
 
-        closeBtn.onclick = function() {
-            stopPolling();
-            imagePage.style.display = 'none';
-            inputPage.style.display = 'flex';
-        };
+        widthInput.onchange = updateConfig;
+        heightInput.onchange = updateConfig;
+        xInput.onchange = updateConfig;
+        yInput.onchange = updateConfig;
+
+        // Load current config on page load
+        async function loadConfig() {
+            try {
+                const response = await fetch('/config');
+                const config = await response.json();
+                widthInput.value = config.width;
+                heightInput.value = config.height;
+                xInput.value = config.x;
+                yInput.value = config.y;
+            } catch (error) {
+                console.error('Failed to load config, using default values:', error);
+                widthInput.value = 300;
+                heightInput.value = 200;
+                xInput.value = 11;
+                yInput.value = 733;
+            }
+        }
 
         function startPolling() {
             fetchAndUpdate();
             intervalId = setInterval(fetchAndUpdate, 2000);
         }
         
-        function stopPolling() {
-            if (intervalId) clearInterval(intervalId);
-        }
-        
         function fetchAndUpdate() {
             // Add a cache buster to avoid browser caching
             img.src = `/latest-image?_=${Date.now()}`;
         }
+
+        (async () => {
+            await loadConfig();
+            await updateConfig(); // Post initial (default or loaded) config
+            startPolling();
+        })();
     </script>
 </body>
 </html> 

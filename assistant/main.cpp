@@ -73,13 +73,21 @@ RecordingParams getRecordingParams(bool shouldReadFromFile) {
     params.screenWidth = GetSystemMetrics(SM_CXSCREEN);
     params.screenHeight = GetSystemMetrics(SM_CYSCREEN);
     if (shouldReadFromFile) {
-        params.config = readConfig("assistant/config.json");
+        params.config = readConfig("temp/config.json");
     } else {
         params.config = Config {1000, {
             SearchRectangle { "villager_production_checker", 300, 36, 11, 733 }
         }};
     }
     return params;
+}
+
+void printRecordingParams(RecordingParams recParams) {
+    std::cout << "Screen Dimension: " << recParams.screenWidth << "x" << recParams.screenHeight << std::endl; 
+    std::cout << "Config: " << recParams.config.interval_ms << "ms, " << recParams.config.search_rectangles.size() << " rectangles" << std::endl;
+    for (const auto& rect: recParams.config.search_rectangles) {
+        std::cout << "Search rectangle: " << rect.name << " (" << rect.x << "," << rect.y << "," << rect.width << "," << rect.height << ")" << std::endl;
+    }
 }
 
 bool saveBitmapToFile(Bitmap* bmp, const std::wstring& filename) {
@@ -202,6 +210,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    bool isDevMode = stream > 0;
+    if (isDevMode) {
+        std::cout << "Running in dev mode. Stream: " << stream << std::endl;
+    }
+
     std::cout << "Starting screen assistant. Press Numpad '*' to start/stop recording.\n" << std::endl;
 
     // Initialize GDI+
@@ -223,12 +236,11 @@ int main(int argc, char* argv[]) {
                 isRecording = !isRecording;
                 if (isRecording) {
                     std::cout << "Recording started. Press Numpad '*' to stop." << std::endl;
-                    bool shouldReadFromFile = stream > 0;
-                    recParams = getRecordingParams(shouldReadFromFile);
-                    std::cout << "Screen Dimension: " << recParams.screenWidth << "x" << recParams.screenHeight << std::endl; 
-                    std::cout << "Config: " << recParams.config.interval_ms << "ms, " << recParams.config.search_rectangles.size() << " rectangles" << std::endl;
-                    for (const auto& rect: recParams.config.search_rectangles) {
-                        std::cout << "Search rectangle: " << rect.name << " (" << rect.x << "," << rect.y << "," << rect.width << "," << rect.height << ")" << std::endl;
+                    
+                    if(!isDevMode) {
+                        // Read recording params on recording start only
+                        recParams = getRecordingParams(isDevMode);
+                        printRecordingParams(recParams);
                     }
                     recording_start = std::chrono::steady_clock::now();
                     // start_overlay_process(10, 200);
@@ -244,6 +256,12 @@ int main(int argc, char* argv[]) {
             }
         }
         if (isRecording) {
+            if (isDevMode) {
+                // Read recording params per loop
+                recParams = getRecordingParams(isDevMode);
+                printRecordingParams(recParams);
+            }
+
             int screenWidth = recParams.screenWidth;
             int screenHeight = recParams.screenHeight;
             Config config = recParams.config;
