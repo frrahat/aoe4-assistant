@@ -199,6 +199,28 @@ void save_and_cleanup_screenshot(Bitmap* bmp) {
     }
 }
 
+enum class NotificationCategory {
+    Info,
+    Warn,
+    Error
+};
+
+void notify(NotificationCategory category) {
+    UINT uType = MB_OK;
+    switch (category) {
+        case NotificationCategory::Info:
+            uType = MB_OK;
+            break;
+        case NotificationCategory::Warn:
+            uType = MB_CANCELTRYCONTINUE;
+            break;
+        case NotificationCategory::Error:
+            uType = MB_ICONHAND;
+            break;
+    }
+    MessageBeep(uType);
+}
+
 int main(int argc, char* argv[]) {
     // Parse stream argument as number
     int stream = 0;
@@ -242,10 +264,10 @@ int main(int argc, char* argv[]) {
                         recParams = getRecordingParams(isDevMode);
                         printRecordingParams(recParams);
                     }
-                    MessageBeep(MB_OK); // Play an alarming sound
+                    notify(NotificationCategory::Info); // Play an alarming sound
                 } else {
                     std::cout << "Recording stopped. Press Numpad '*' to start." << std::endl;
-                    MessageBeep(MB_CANCELTRYCONTINUE); // Play an alarming sound
+                    notify(NotificationCategory::Warn); // Play an alarming sound
                 }
             }
         }
@@ -283,7 +305,7 @@ int main(int argc, char* argv[]) {
                         {
                             int result = checkVillagerProduction(bmp);
                             if (result == 0) {
-                                MessageBeep(MB_ICONHAND); // Play an alarming sound
+                                notify(NotificationCategory::Error); // Play an alarming sound
                             }
                         }
                         break;
