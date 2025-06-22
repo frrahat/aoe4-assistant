@@ -4,4 +4,4 @@
 #include <gdiplus.h>
 
 std::wstring getExeDir();
-int checkVillagerProduction(Gdiplus::Bitmap* bmp);
+int checkVillagerProduction(Gdiplus::Bitmap* bmp, const std::string& civilization);

@@ -42,7 +42,7 @@ int wmain() {
             delete bmp;
             continue;
         }
-        int result = checkVillagerProduction(bmp);
+        int result = checkVillagerProduction(bmp, "mongols");
         std::wcout << file << L": checkVillagerProduction = " << result << std::endl;
         delete bmp;
     }

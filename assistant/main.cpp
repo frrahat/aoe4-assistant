@@ -14,6 +14,7 @@
 #include <cwchar>
 #include <fstream>
 #include <sstream>
+#include <map>
 #pragma comment(lib, "ws2_32.lib")
 #include "../recorder/recorder.h"
 #include "../third_party/json.hpp"
@@ -23,6 +24,23 @@ using json = nlohmann::json;
 
 namespace fs = std::experimental::filesystem;
 using namespace Gdiplus;
+
+enum class Civilization {
+    Abbasid = 0,
+    Ayyubids = 1,
+    Byzantines = 2,
+    Chineese = 3,
+    Delhi_Sultanate = 4,
+    English = 5,
+    French = 6,
+    Jeanne_D_Arc = 7,
+    Malians = 8,
+    Mongols = 9,
+    Order_Of_The_Dragon = 10,
+    Ottomans = 11,
+    Rus = 12,
+    Zhu_Xi = 13
+};
 
 struct SearchRectangle {
     std::string name;
@@ -62,28 +80,81 @@ Config readConfig(const std::string& filename) {
     return config;
 }
 
+struct CivilizationRecordingParams {
+    int x;
+    int y;
+};
+
+// Civilization-specific recording parameter overrides
+std::map<Civilization, CivilizationRecordingParams> civilizationParams = {
+    {Civilization::Mongols, {11, 733}},           // Default
+    {Civilization::English, {16, 731}},           // Example absolute values
+    {Civilization::French, {14, 734}},            // Example absolute values
+    {Civilization::Chineese, {9, 736}},           // Example absolute values
+    {Civilization::Ayyubids, {12, 732}},          // Example absolute values
+    {Civilization::Ottomans, {15, 735}},          // Example absolute values
+    {Civilization::Malians, {10, 733}},           // Example absolute values
+    {Civilization::Delhi_Sultanate, {13, 730}},   // Example absolute values
+    {Civilization::Zhu_Xi, {11, 734}},            // Example absolute values
+    {Civilization::Abbasid, {8, 731}},            // Example absolute values
+    {Civilization::Byzantines, {12, 735}},        // Example absolute values
+    {Civilization::Order_Of_The_Dragon, {14, 732}}, // Example absolute values
+    {Civilization::Rus, {9, 734}},                // Example absolute values
+    {Civilization::Jeanne_D_Arc, {13, 733}}       // Example absolute values
+};
+
 struct RecordingParams {
     int screenWidth;
     int screenHeight;
     Config config;
+    Civilization selectedCivilization;
 };
 
-RecordingParams getRecordingParams(bool shouldReadFromFile) {
+RecordingParams getRecordingParams(bool shouldReadFromFile, Civilization civilization) {
     RecordingParams params;
     params.screenWidth = GetSystemMetrics(SM_CXSCREEN);
     params.screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    params.selectedCivilization = civilization;
+    
     if (shouldReadFromFile) {
         params.config = readConfig("temp/config.json");
     } else {
+        // Get civilization-specific coordinates
+        auto civParams = civilizationParams.find(civilization);
+        int x = (civParams != civilizationParams.end()) ? civParams->second.x : 11;  // Default x = 11
+        int y = (civParams != civilizationParams.end()) ? civParams->second.y : 733; // Default y = 733
+        
         params.config = Config {1000, {
-            SearchRectangle { "villager_production_checker", 300, 36, 11, 733 }
+            SearchRectangle { "villager_production_checker", 300, 36, x, y }
         }};
     }
     return params;
 }
 
+// Helper to get civilization name from enum
+std::string getCivilizationName(Civilization civ) {
+    switch (civ) {
+        case Civilization::Abbasid: return "abbasid";
+        case Civilization::Ayyubids: return "ayyubids";
+        case Civilization::Byzantines: return "byzantines";
+        case Civilization::Chineese: return "chineese";
+        case Civilization::Delhi_Sultanate: return "delhi_sultanate";
+        case Civilization::English: return "english";
+        case Civilization::French: return "french";
+        case Civilization::Jeanne_D_Arc: return "jeanne_d_arc";
+        case Civilization::Malians: return "malians";
+        case Civilization::Mongols: return "mongols";
+        case Civilization::Order_Of_The_Dragon: return "order_of_the_dragon";
+        case Civilization::Ottomans: return "ottomans";
+        case Civilization::Rus: return "rus";
+        case Civilization::Zhu_Xi: return "zhu_xi";
+        default: return "unknown";
+    }
+}
+
 void printRecordingParams(RecordingParams recParams) {
     std::cout << "Screen Dimension: " << recParams.screenWidth << "x" << recParams.screenHeight << std::endl; 
+    std::cout << "Selected Civilization: " << getCivilizationName(recParams.selectedCivilization) << std::endl;
     std::cout << "Config: " << recParams.config.interval_ms << "ms, " << recParams.config.search_rectangles.size() << " rectangles" << std::endl;
     for (const auto& rect: recParams.config.search_rectangles) {
         std::cout << "Search rectangle: " << rect.name << " (" << rect.x << "," << rect.y << "," << rect.width << "," << rect.height << ")" << std::endl;
@@ -221,7 +292,45 @@ void notify(NotificationCategory category) {
     MessageBeep(uType);
 }
 
+// Helper to get civilization from integer input
+Civilization getCivilizationFromInput(int input) {
+    if (input >= 0 && input <= 13) {
+        return static_cast<Civilization>(input);
+    }
+    return Civilization::Mongols; // Default fallback
+}
+
+// Function to display civilization options and get user input
+Civilization selectCivilization() {
+    std::cout << "Select your civilization:" << std::endl;
+    std::cout << "0. Abbasid" << std::endl;
+    std::cout << "1. Ayyubids" << std::endl;
+    std::cout << "2. Byzantines" << std::endl;
+    std::cout << "3. Chineese" << std::endl;
+    std::cout << "4. Delhi Sultanate" << std::endl;
+    std::cout << "5. English" << std::endl;
+    std::cout << "6. French" << std::endl;
+    std::cout << "7. Jeanne D'Arc" << std::endl;
+    std::cout << "8. Malians" << std::endl;
+    std::cout << "9. Mongols" << std::endl;
+    std::cout << "10. Order of the Dragon" << std::endl;
+    std::cout << "11. Ottomans" << std::endl;
+    std::cout << "12. Rus" << std::endl;
+    std::cout << "13. Zhu Xi" << std::endl;
+    std::cout << "Enter civilization number: ";
+    
+    int input;
+    std::cin >> input;
+    
+    Civilization selected = getCivilizationFromInput(input);
+    std::cout << "Selected civilization: " << getCivilizationName(selected) << std::endl;
+    return selected;
+}
+
 int main(int argc, char* argv[]) {
+    // Get civilization selection from user
+    Civilization selectedCivilization = selectCivilization();
+    
     // Parse stream argument as number
     int stream = 0;
     for (int i = 1; i < argc; ++i) {
@@ -261,7 +370,7 @@ int main(int argc, char* argv[]) {
                     
                     if(!isDevMode) {
                         // Read recording params on recording start only
-                        recParams = getRecordingParams(isDevMode);
+                        recParams = getRecordingParams(isDevMode, selectedCivilization);
                         printRecordingParams(recParams);
                     }
                     notify(NotificationCategory::Info); // Play an alarming sound
@@ -274,7 +383,7 @@ int main(int argc, char* argv[]) {
         if (isRecording) {
             if (isDevMode) {
                 // Read recording params per loop
-                recParams = getRecordingParams(isDevMode);
+                recParams = getRecordingParams(isDevMode, selectedCivilization);
                 printRecordingParams(recParams);
             }
 
@@ -303,7 +412,7 @@ int main(int argc, char* argv[]) {
                     case 0:
                         assert(config.search_rectangles[i].name == "villager_production_checker");
                         {
-                            int result = checkVillagerProduction(bmp);
+                            int result = checkVillagerProduction(bmp, getCivilizationName(recParams.selectedCivilization));
                             if (result == 0) {
                                 notify(NotificationCategory::Error); // Play an alarming sound
                             }
