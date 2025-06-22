@@ -25,6 +25,10 @@
         <div class="image-container">
             <img id="stream-img" src="" alt="Streaming...">
         </div>
+        <div class="controls">
+            <label>Description (optional): <input type="text" id="description" placeholder="Enter description..." maxlength="50"></label>
+            <button id="capture-btn" style="padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Capture</button>
+        </div>
     </div>
     <script>
         const widthInput = document.getElementById('width');
@@ -33,6 +37,8 @@
         const yInput = document.getElementById('y');
         const img = document.getElementById('stream-img');
         const errorMessage = document.getElementById('error-message');
+        const captureBtn = document.getElementById('capture-btn');
+        const descriptionInput = document.getElementById('description');
         let intervalId = null;
 
         async function updateConfig() {
@@ -66,6 +72,43 @@
         heightInput.onchange = updateConfig;
         xInput.onchange = updateConfig;
         yInput.onchange = updateConfig;
+
+        async function captureImage() {
+            const width = parseInt(widthInput.value);
+            const height = parseInt(heightInput.value);
+            const x = parseInt(xInput.value);
+            const y = parseInt(yInput.value);
+            const description = descriptionInput.value.trim();
+            
+            try {
+                const response = await fetch('/capture', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ width, height, x, y, description })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    errorMessage.textContent = 'Image captured successfully!';
+                    errorMessage.style.color = 'green';
+                    errorMessage.style.display = 'block';
+                    setTimeout(() => {
+                        errorMessage.style.display = 'none';
+                    }, 3000);
+                } else {
+                    errorMessage.textContent = result.error || 'Failed to capture image';
+                    errorMessage.style.color = 'red';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Network error: ' + error.message;
+                errorMessage.style.color = 'red';
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        captureBtn.onclick = captureImage;
 
         // Load current config on page load
         async function loadConfig() {

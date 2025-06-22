@@ -1,6 +1,9 @@
 import os
 import json
 import argparse
+import shutil
+import re
+from datetime import datetime
 from flask import Flask, send_from_directory, request, abort, jsonify
 from pathlib import Path
 
@@ -86,6 +89,65 @@ def latest_image():
         abort(404)
     latest = images[0]
     return send_from_directory(Path('../../', IMAGE_FOLDER), Path(latest).name, mimetype='image/png', as_attachment=False)
+
+@app.route('/capture', methods=['POST'])
+def capture():
+    data = request.get_json()
+    width = data.get('width')
+    height = data.get('height')
+    x = data.get('x')
+    y = data.get('y')
+    description = data.get('description', '').strip()
+    
+    # Validation
+    if not isinstance(width, int) or not isinstance(height, int) or not isinstance(x, int) or not isinstance(y, int):
+        return jsonify({'error': 'Width, height, x, and y must be integers'}), 400
+    if not (10 <= width <= 1000) or not (10 <= height <= 1000):
+        return jsonify({'error': 'Width and height must be between 10 and 1000'}), 400
+    if not (0 <= x <= 10000) or not (0 <= y <= 50000):
+        return jsonify({'error': 'X must be between 0 and 10000, Y must be between 0 and 50000'}), 400
+    
+    # Sanitize description - remove special characters and limit length
+    if description:
+        # Remove special characters except alphanumeric, spaces, hyphens, and underscores
+        description = re.sub(r'[^a-zA-Z0-9\s\-_]', '', description)
+        # Replace spaces with underscores
+        description = re.sub(r'\s+', '_', description)
+        # Limit length to 30 characters
+        description = description[:30]
+        # Ensure it's not empty after sanitization
+        if not description:
+            description = ''
+    
+    # Get the latest image
+    folder = Path(IMAGE_FOLDER)
+    if not folder.exists() or not any(folder.iterdir()):
+        return jsonify({'error': 'No images available to capture'}), 404
+    
+    images = sorted(folder.glob('*.png'), key=lambda f: f.stat().st_mtime, reverse=True)
+    if not images:
+        return jsonify({'error': 'No images available to capture'}), 404
+    
+    latest_image_path = images[0]
+    
+    # Create captures folder
+    captures_folder = Path('temp/captures')
+    captures_folder.mkdir(exist_ok=True)
+    
+    # Generate filename with metadata
+    capture_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+    if description:
+        filename = f"{capture_time}_{width}_{height}_{x}_{y}_{description}.png"
+    else:
+        filename = f"{capture_time}_{width}_{height}_{x}_{y}.png"
+    capture_path = captures_folder / filename
+    
+    try:
+        # Copy the image to captures folder
+        shutil.copy2(latest_image_path, capture_path)
+        return jsonify({'success': True, 'filename': filename, 'path': str(capture_path)})
+    except Exception as e:
+        return jsonify({'error': f'Failed to capture image: {str(e)}'}), 500
 
 @app.route('/<path:path>')
 def static_proxy(path):
