@@ -29,7 +29,7 @@ enum class Civilization {
     Abbasid = 0,
     Ayyubids = 1,
     Byzantines = 2,
-    Chineese = 3,
+    Chinese = 3,
     Delhi_Sultanate = 4,
     English = 5,
     French = 6,
@@ -92,7 +92,7 @@ std::map<Civilization, CivilizationRecordingParams> civilizationParams = {
     {Civilization::Abbasid, {8, 731}},
     {Civilization::Ayyubids, {12, 732}},
     {Civilization::Byzantines, {12, 735}},
-    {Civilization::Chineese, {9, 736}},
+    {Civilization::Chinese, {9, 736}},
     {Civilization::Delhi_Sultanate, {13, 730}},
     {Civilization::English, {16, 731}},
     {Civilization::French, {14, 734}},
@@ -141,7 +141,7 @@ std::string getCivilizationName(Civilization civ) {
         case Civilization::Abbasid: return "abbasid";
         case Civilization::Ayyubids: return "ayyubids";
         case Civilization::Byzantines: return "byzantines";
-        case Civilization::Chineese: return "chineese";
+        case Civilization::Chinese: return "chinese";
         case Civilization::Delhi_Sultanate: return "delhi_sultanate";
         case Civilization::English: return "english";
         case Civilization::French: return "french";
@@ -312,7 +312,7 @@ Civilization selectCivilization() {
     std::cout << "0. Abbasid" << std::endl;
     std::cout << "1. Ayyubids" << std::endl;
     std::cout << "2. Byzantines" << std::endl;
-    std::cout << "3. Chineese" << std::endl;
+    std::cout << "3. Chinese" << std::endl;
     std::cout << "4. Delhi Sultanate" << std::endl;
     std::cout << "5. English" << std::endl;
     std::cout << "6. French" << std::endl;
