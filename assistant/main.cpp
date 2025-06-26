@@ -89,22 +89,22 @@ struct CivilizationRecordingParams {
 
 // Civilization-specific recording parameter overrides
 std::map<Civilization, CivilizationRecordingParams> civilizationParams = {
-    {Civilization::Abbasid, {8, 731}},
-    {Civilization::Ayyubids, {12, 732}},
-    {Civilization::Byzantines, {12, 735}},
-    {Civilization::Chinese, {9, 736}},
-    {Civilization::Delhi_Sultanate, {13, 730}},
-    {Civilization::English, {16, 731}},
-    {Civilization::French, {14, 734}},
-    {Civilization::Holy_Roman_Empire, {12, 736}},
-    {Civilization::Japanese, {10, 735}},
-    {Civilization::Jeanne_D_Arc, {13, 733}},
-    {Civilization::Malians, {10, 733}},
+    {Civilization::Abbasid, {11, 729}},
+    {Civilization::Ayyubids, {11, 729}},
+    {Civilization::Byzantines, {11, 733}},
+    {Civilization::Chinese, {11, 733}},
+    {Civilization::Delhi_Sultanate, {11, 733}},
+    {Civilization::English, {11, 733}},
+    {Civilization::French, {11, 733}},
+    {Civilization::Holy_Roman_Empire, {11, 733}},
+    {Civilization::Japanese, {11, 655}},
+    {Civilization::Jeanne_D_Arc, {11, 733}},
+    {Civilization::Malians, {11, 733}},
     {Civilization::Mongols, {11, 733}},
-    {Civilization::Order_Of_The_Dragon, {14, 732}},
-    {Civilization::Ottomans, {15, 735}},
-    {Civilization::Rus, {9, 734}},
-    {Civilization::Zhu_Xi, {11, 734}}
+    {Civilization::Order_Of_The_Dragon, {11, 733}},
+    {Civilization::Ottomans, {11, 733}},
+    {Civilization::Rus, {11, 733}},
+    {Civilization::Zhu_Xi, {11, 733}}
 };
 
 struct RecordingParams {
