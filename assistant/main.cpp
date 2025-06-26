@@ -33,13 +33,15 @@ enum class Civilization {
     Delhi_Sultanate = 4,
     English = 5,
     French = 6,
-    Jeanne_D_Arc = 7,
-    Malians = 8,
-    Mongols = 9,
-    Order_Of_The_Dragon = 10,
-    Ottomans = 11,
-    Rus = 12,
-    Zhu_Xi = 13
+    Holy_Roman_Empire = 7,
+    Japanese = 8,
+    Jeanne_D_Arc = 9,
+    Malians = 10,
+    Mongols = 11,
+    Order_Of_The_Dragon = 12,
+    Ottomans = 13,
+    Rus = 14,
+    Zhu_Xi = 15
 };
 
 struct SearchRectangle {
@@ -87,20 +89,22 @@ struct CivilizationRecordingParams {
 
 // Civilization-specific recording parameter overrides
 std::map<Civilization, CivilizationRecordingParams> civilizationParams = {
-    {Civilization::Mongols, {11, 733}},           // Default
-    {Civilization::English, {16, 731}},           // Example absolute values
-    {Civilization::French, {14, 734}},            // Example absolute values
-    {Civilization::Chineese, {9, 736}},           // Example absolute values
-    {Civilization::Ayyubids, {12, 732}},          // Example absolute values
-    {Civilization::Ottomans, {15, 735}},          // Example absolute values
-    {Civilization::Malians, {10, 733}},           // Example absolute values
-    {Civilization::Delhi_Sultanate, {13, 730}},   // Example absolute values
-    {Civilization::Zhu_Xi, {11, 734}},            // Example absolute values
-    {Civilization::Abbasid, {8, 731}},            // Example absolute values
-    {Civilization::Byzantines, {12, 735}},        // Example absolute values
-    {Civilization::Order_Of_The_Dragon, {14, 732}}, // Example absolute values
-    {Civilization::Rus, {9, 734}},                // Example absolute values
-    {Civilization::Jeanne_D_Arc, {13, 733}}       // Example absolute values
+    {Civilization::Abbasid, {8, 731}},
+    {Civilization::Ayyubids, {12, 732}},
+    {Civilization::Byzantines, {12, 735}},
+    {Civilization::Chineese, {9, 736}},
+    {Civilization::Delhi_Sultanate, {13, 730}},
+    {Civilization::English, {16, 731}},
+    {Civilization::French, {14, 734}},
+    {Civilization::Holy_Roman_Empire, {12, 736}},
+    {Civilization::Japanese, {10, 735}},
+    {Civilization::Jeanne_D_Arc, {13, 733}},
+    {Civilization::Malians, {10, 733}},
+    {Civilization::Mongols, {11, 733}},
+    {Civilization::Order_Of_The_Dragon, {14, 732}},
+    {Civilization::Ottomans, {15, 735}},
+    {Civilization::Rus, {9, 734}},
+    {Civilization::Zhu_Xi, {11, 734}}
 };
 
 struct RecordingParams {
@@ -141,6 +145,8 @@ std::string getCivilizationName(Civilization civ) {
         case Civilization::Delhi_Sultanate: return "delhi_sultanate";
         case Civilization::English: return "english";
         case Civilization::French: return "french";
+        case Civilization::Holy_Roman_Empire: return "holy_roman_empire";
+        case Civilization::Japanese: return "japanese";
         case Civilization::Jeanne_D_Arc: return "jeanne_d_arc";
         case Civilization::Malians: return "malians";
         case Civilization::Mongols: return "mongols";
@@ -294,7 +300,7 @@ void notify(NotificationCategory category) {
 
 // Helper to get civilization from integer input
 Civilization getCivilizationFromInput(int input) {
-    if (input >= 0 && input <= 13) {
+    if (input >= 0 && input <= 15) {
         return static_cast<Civilization>(input);
     }
     return Civilization::Mongols; // Default fallback
@@ -310,13 +316,15 @@ Civilization selectCivilization() {
     std::cout << "4. Delhi Sultanate" << std::endl;
     std::cout << "5. English" << std::endl;
     std::cout << "6. French" << std::endl;
-    std::cout << "7. Jeanne D'Arc" << std::endl;
-    std::cout << "8. Malians" << std::endl;
-    std::cout << "9. Mongols" << std::endl;
-    std::cout << "10. Order of the Dragon" << std::endl;
-    std::cout << "11. Ottomans" << std::endl;
-    std::cout << "12. Rus" << std::endl;
-    std::cout << "13. Zhu Xi" << std::endl;
+    std::cout << "7. Holy Roman Empire" << std::endl;
+    std::cout << "8. Japanese" << std::endl;
+    std::cout << "9. Jeanne D'Arc" << std::endl;
+    std::cout << "10. Malians" << std::endl;
+    std::cout << "11. Mongols" << std::endl;
+    std::cout << "12. Order of the Dragon" << std::endl;
+    std::cout << "13. Ottomans" << std::endl;
+    std::cout << "14. Rus" << std::endl;
+    std::cout << "15. Zhu Xi" << std::endl;
     std::cout << "Enter civilization number: ";
     
     int input;

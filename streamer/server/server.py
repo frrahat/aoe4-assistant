@@ -110,7 +110,7 @@ def capture():
     # Sanitize civilization - only allow known values
     valid_civilizations = [
         'abbasid', 'ayyubids', 'byzantines', 'chineese', 'delhi_sultanate', 'english', 'french',
-        'jeanne_d_arc', 'malians', 'mongols', 'order_of_the_dragon', 'ottomans', 'rus', 'zhu_xi'
+        'holy_roman_empire', 'japanese', 'jeanne_d_arc', 'malians', 'mongols', 'order_of_the_dragon', 'ottomans', 'rus', 'zhu_xi'
     ]
     if civilization not in valid_civilizations:
         civilization = valid_civilizations[0]
