@@ -97,7 +97,7 @@ def capture():
     height = data.get('height')
     x = data.get('x')
     y = data.get('y')
-    description = data.get('description', '').strip()
+    civilization = data.get('civilization', '').strip()
     
     # Validation
     if not isinstance(width, int) or not isinstance(height, int) or not isinstance(x, int) or not isinstance(y, int):
@@ -107,17 +107,13 @@ def capture():
     if not (0 <= x <= 10000) or not (0 <= y <= 50000):
         return jsonify({'error': 'X must be between 0 and 10000, Y must be between 0 and 50000'}), 400
     
-    # Sanitize description - remove special characters and limit length
-    if description:
-        # Remove special characters except alphanumeric, spaces, hyphens, and underscores
-        description = re.sub(r'[^a-zA-Z0-9\s\-_]', '', description)
-        # Replace spaces with underscores
-        description = re.sub(r'\s+', '_', description)
-        # Limit length to 30 characters
-        description = description[:30]
-        # Ensure it's not empty after sanitization
-        if not description:
-            description = ''
+    # Sanitize civilization - only allow known values
+    valid_civilizations = [
+        'abbasid', 'ayyubids', 'byzantines', 'chineese', 'delhi_sultanate', 'english', 'french',
+        'jeanne_d_arc', 'malians', 'mongols', 'order_of_the_dragon', 'ottomans', 'rus', 'zhu_xi'
+    ]
+    if civilization not in valid_civilizations:
+        civilization = valid_civilizations[0]
     
     # Get the latest image
     folder = Path(IMAGE_FOLDER)
@@ -136,8 +132,8 @@ def capture():
     
     # Generate filename with metadata
     capture_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-    if description:
-        filename = f"{capture_time}_{width}_{height}_{x}_{y}_{description}.png"
+    if civilization:
+        filename = f"{capture_time}_{width}_{height}_{x}_{y}_{civilization}.png"
     else:
         filename = f"{capture_time}_{width}_{height}_{x}_{y}.png"
     capture_path = captures_folder / filename

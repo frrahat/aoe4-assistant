@@ -26,7 +26,24 @@
             <img id="stream-img" src="" alt="Streaming...">
         </div>
         <div class="controls">
-            <label>Description (optional): <input type="text" id="description" placeholder="Enter description..." maxlength="50"></label>
+            <label>Civilization:
+                <select id="civilization">
+                    <option value="abbasid">abbasid</option>
+                    <option value="ayyubids">ayyubids</option>
+                    <option value="byzantines">byzantines</option>
+                    <option value="chineese">chineese</option>
+                    <option value="delhi_sultanate">delhi_sultanate</option>
+                    <option value="english">english</option>
+                    <option value="french">french</option>
+                    <option value="jeanne_d_arc">jeanne_d_arc</option>
+                    <option value="malians">malians</option>
+                    <option value="mongols">mongols</option>
+                    <option value="order_of_the_dragon">order_of_the_dragon</option>
+                    <option value="ottomans">ottomans</option>
+                    <option value="rus">rus</option>
+                    <option value="zhu_xi">zhu_xi</option>
+                </select>
+            </label>
             <button id="capture-btn" style="padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Capture</button>
         </div>
     </div>
@@ -38,7 +55,7 @@
         const img = document.getElementById('stream-img');
         const errorMessage = document.getElementById('error-message');
         const captureBtn = document.getElementById('capture-btn');
-        const descriptionInput = document.getElementById('description');
+        const civilizationInput = document.getElementById('civilization');
         let intervalId = null;
 
         async function updateConfig() {
@@ -78,13 +95,13 @@
             const height = parseInt(heightInput.value);
             const x = parseInt(xInput.value);
             const y = parseInt(yInput.value);
-            const description = descriptionInput.value.trim();
+            const civilization = civilizationInput.value;
             
             try {
                 const response = await fetch('/capture', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ width, height, x, y, description })
+                    body: JSON.stringify({ width, height, x, y, civilization })
                 });
                 
                 const result = await response.json();
