@@ -19,6 +19,7 @@
 #include "../recorder/recorder.h"
 #include "../third_party/json.hpp"
 #include "villager_production_checker/villager_production_checker.h"
+#include "idle_worker_checker/idle_worker_checker.h"
 
 using json = nlohmann::json;
 
@@ -88,7 +89,7 @@ struct CivilizationRecordingParams {
 };
 
 // Civilization-specific recording parameter overrides
-std::map<Civilization, CivilizationRecordingParams> civilizationParams = {
+std::map<Civilization, CivilizationRecordingParams> civilizationParamsForProductionQueue = {
     {Civilization::Abbasid, {11, 729}},
     {Civilization::Ayyubids, {11, 729}},
     {Civilization::Byzantines, {11, 733}},
@@ -107,6 +108,12 @@ std::map<Civilization, CivilizationRecordingParams> civilizationParams = {
     {Civilization::Zhu_Xi, {11, 733}}
 };
 
+std::map<Civilization, CivilizationRecordingParams> civilizationParamsForIdleStatus = {
+    // {Civilization::Abbasid, {147, 861}},
+    // {Civilization::Ayyubids, {147, 861}},
+    // {Civilization::Byzantines, {147, 861}},
+};
+
 struct RecordingParams {
     int screenWidth;
     int screenHeight;
@@ -119,17 +126,22 @@ RecordingParams getRecordingParams(bool shouldReadFromFile, Civilization civiliz
     params.screenWidth = GetSystemMetrics(SM_CXSCREEN);
     params.screenHeight = GetSystemMetrics(SM_CYSCREEN);
     params.selectedCivilization = civilization;
-    
+
     if (shouldReadFromFile) {
         params.config = readConfig("temp/config.json");
     } else {
         // Get civilization-specific coordinates
-        auto civParams = civilizationParams.find(civilization);
-        int x = (civParams != civilizationParams.end()) ? civParams->second.x : 11;  // Default x = 11
-        int y = (civParams != civilizationParams.end()) ? civParams->second.y : 733; // Default y = 733
-        
+        auto civParamsForProdQueue = civilizationParamsForProductionQueue.find(civilization);
+        int prodQueueX = (civParamsForProdQueue != civilizationParamsForProductionQueue.end()) ? civParamsForProdQueue->second.x : 11;  // Default x = 11
+        int prodQueueY = (civParamsForProdQueue != civilizationParamsForProductionQueue.end()) ? civParamsForProdQueue->second.y : 733; // Default y = 733
+
+        auto civParamsForIdleStatus = civilizationParamsForIdleStatus.find(civilization);
+        int idleX = (civParamsForIdleStatus != civilizationParamsForIdleStatus.end()) ? civParamsForIdleStatus->second.x : 147;  // Default x = 147
+        int idleY = (civParamsForIdleStatus != civilizationParamsForIdleStatus.end()) ? civParamsForIdleStatus->second.y : 861; // Default y = 861
+
         params.config = Config {1000, {
-            SearchRectangle { "villager_production_checker", 300, 36, x, y }
+            SearchRectangle { "villager_production_checker", 300, 36, prodQueueX, prodQueueY },
+            SearchRectangle { "idle_worker_checker", 10, 14, idleX, idleY },
         }};
     }
     return params;
@@ -159,7 +171,7 @@ std::string getCivilizationName(Civilization civ) {
 }
 
 void printRecordingParams(RecordingParams recParams) {
-    std::cout << "Screen Dimension: " << recParams.screenWidth << "x" << recParams.screenHeight << std::endl; 
+    std::cout << "Screen Dimension: " << recParams.screenWidth << "x" << recParams.screenHeight << std::endl;
     std::cout << "Selected Civilization: " << getCivilizationName(recParams.selectedCivilization) << std::endl;
     std::cout << "Config: " << recParams.config.interval_ms << "ms, " << recParams.config.search_rectangles.size() << " rectangles" << std::endl;
     for (const auto& rect: recParams.config.search_rectangles) {
@@ -326,10 +338,10 @@ Civilization selectCivilization() {
     std::cout << "14. Rus" << std::endl;
     std::cout << "15. Zhu Xi" << std::endl;
     std::cout << "Enter civilization number: ";
-    
+
     int input;
     std::cin >> input;
-    
+
     Civilization selected = getCivilizationFromInput(input);
     std::cout << "Selected civilization: " << getCivilizationName(selected) << std::endl;
     return selected;
@@ -338,7 +350,7 @@ Civilization selectCivilization() {
 int main(int argc, char* argv[]) {
     // Get civilization selection from user
     Civilization selectedCivilization = selectCivilization();
-    
+
     // Parse stream argument as number
     int stream = 0;
     for (int i = 1; i < argc; ++i) {
@@ -375,7 +387,7 @@ int main(int argc, char* argv[]) {
                 isRecording = !isRecording;
                 if (isRecording) {
                     std::cout << "Recording started. Press Numpad '*' to stop." << std::endl;
-                    
+
                     if(!isDevMode) {
                         // Read recording params on recording start only
                         recParams = getRecordingParams(isDevMode, selectedCivilization);
@@ -416,18 +428,23 @@ int main(int argc, char* argv[]) {
                 Bitmap* bmp = bitmaps[i];
                 if (!bmp) continue;
 
-                switch (i) {
-                    case 0:
-                        assert(config.search_rectangles[i].name == "villager_production_checker");
-                        {
-                            int result = checkVillagerProduction(bmp, getCivilizationName(recParams.selectedCivilization));
-                            if (result == 0) {
-                                notify(NotificationCategory::Error); // Play an alarming sound
-                            }
-                        }
-                        break;
+                if(i == 0) {
+                    assert(config.search_rectangles[i].name == "villager_production_checker");
+                    int result = checkVillagerProduction(bmp, getCivilizationName(recParams.selectedCivilization));
+                    if (result == 0) {
+                        notify(NotificationCategory::Error); // Play an alarming sound
+                    }
                 }
-                
+
+                else if (i == 1) {
+                    assert(config.search_rectangles[i].name == "idle_worker_checker");
+                    int result = checkIdleWorkers(bmp);
+                    if (result == 0) {
+                        notify(NotificationCategory::Warn); // Play an alarming sound
+                    }
+                }
+
+
                 if (stream > 0 && stream == static_cast<int>(i+1)) {
                     save_and_cleanup_screenshot(bmp);
                 }

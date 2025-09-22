@@ -28,14 +28,18 @@ REM Clone data folder
 xcopy ..\data\ .\data\ /s /e /i /y >nul 2>&1
 
 REM If running test, only build and run the test
-if %run_test%==1 (
+if "%1"=="test" (
     cl.exe /EHsc /std:c++17 ../assistant/villager_production_checker/villager_production_checker_test.cpp ../assistant/villager_production_checker/villager_production_checker.cpp ../matcher/matcher.cpp /I../ /I%OPENCV_INCLUDE% /Fe:villager_production_test.exe /link gdiplus.lib user32.lib gdi32.lib %OPENCV_LIB%\opencv_world4110.lib
     villager_production_test.exe
+
+    cl.exe /EHsc /std:c++17 ../assistant/idle_worker_checker/idle_worker_checker_test.cpp ../assistant/idle_worker_checker/idle_worker_checker.cpp ../matcher/matcher.cpp /I../ /I%OPENCV_INCLUDE% /Fe:idle_worker_test.exe /link gdiplus.lib user32.lib gdi32.lib %OPENCV_LIB%\opencv_world4110.lib
+    idle_worker_test.exe
+
     popd
     goto :eof
 )
 
-cl.exe /EHsc /std:c++17 ../assistant/main.cpp ../recorder/recorder.cpp ../matcher/matcher.cpp ../assistant/villager_production_checker/villager_production_checker.cpp /I../ /I%OPENCV_INCLUDE% /Fe:aoe4_assistant.exe /link gdiplus.lib user32.lib gdi32.lib %OPENCV_LIB%\opencv_world4110.lib
+cl.exe /EHsc /std:c++17 ../assistant/main.cpp ../recorder/recorder.cpp ../matcher/matcher.cpp ../assistant/villager_production_checker/villager_production_checker.cpp ../assistant/idle_worker_checker/idle_worker_checker.cpp /I../ /I%OPENCV_INCLUDE% /Fe:aoe4_assistant.exe /link gdiplus.lib user32.lib gdi32.lib %OPENCV_LIB%\opencv_world4110.lib
 @REM cl.exe /EHsc /std:c++17 ./overlay/overlay.cpp /I../ /Fe:overlay.exe /link user32.lib gdi32.lib
 popd
 
