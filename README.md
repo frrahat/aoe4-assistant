@@ -57,6 +57,28 @@ A real-time screen monitoring tool for Age of Empires IV that helps players trac
    │       └── bin\
    ```
 
+### MSVC Command Prompt Setup For Windows (Recommended)
+
+Set up a Command Prompt with MSVC environment in VS Code:
+
+1. **Open VS Code Settings** (`Ctrl+,`)
+
+2. **Add terminal profile** by editing `settings.json`:
+   ```json
+   "terminal.integrated.profiles.windows": {
+       "Command Prompt with MSVC": {
+           "path": "C:\\Windows\\System32\\cmd.exe",
+           "args": [
+               "/k",
+               "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat"
+           ],
+           "icon": "terminal-cmd"
+       }
+   }
+   ```
+
+This ensures all MSVC environment variables (include paths, library paths, etc.) are properly configured for building C++ projects.
+
 ## Installation
 
 1. **Clone the repository**:
