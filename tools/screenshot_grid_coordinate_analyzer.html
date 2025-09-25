@@ -95,6 +95,115 @@
             opacity: 1;
         }
 
+        .selection-rectangle {
+            position: absolute;
+            border: 2px solid #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .coordinate-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 14px;
+            border: 1px solid #e9ecef;
+        }
+
+        .coordinate-info div {
+            margin-bottom: 5px;
+        }
+
+        .coordinate-info div:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            font-family: monospace;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-buttons button {
+            padding: 10px 20px;
+        }
+
+        .cancel-btn {
+            background: #6c757d;
+        }
+
+        .cancel-btn:hover {
+            background: #5a6268;
+        }
+
+        .mode-toggle {
+            margin-left: 20px;
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .mode-toggle:hover {
+            background: #218838;
+        }
+
+        .mode-toggle.crop-mode {
+            background: #dc3545;
+        }
+
+        .mode-toggle.crop-mode:hover {
+            background: #c82333;
+        }
+
         .info {
             margin-top: 15px;
             padding: 10px;
@@ -159,6 +268,7 @@
                     <span id="gridOpacityValue">30%</span>
 
                     <button onclick="toggleGrid()">Toggle Grid</button>
+                    <button id="modeToggle" class="mode-toggle" onclick="toggleMode()">Enable Crop Mode</button>
                 </div>
             </div>
         </div>
@@ -171,14 +281,34 @@
             </div>
         </div>
 
+        <!-- Crop Selection Modal -->
+        <div id="cropModal" class="modal">
+            <div class="modal-content">
+                <h3>Crop Selection</h3>
+                <div id="coordinateInfo" class="coordinate-info">
+                    <!-- Coordinate info will be populated here -->
+                </div>
+                <label for="cropName">File name:</label>
+                <input type="text" id="cropName" class="modal-input" placeholder="Enter filename...">
+                <div class="modal-buttons">
+                    <button class="cancel-btn" onclick="cancelCrop()">Cancel</button>
+                    <button onclick="confirmCrop()">Download Crop</button>
+                </div>
+            </div>
+        </div>
+
         <div class="info">
             <strong>Instructions:</strong>
             <ul>
-                <li>Upload a screenshot image using the file input above</li>
-                <li>Set the target width and height for coordinate scaling</li>
-                <li>Adjust grid size and opacity using the sliders</li>
-                <li>Hover over the image to see both actual and scaled coordinates</li>
-                <li>Scaled coordinates represent the position in your target resolution</li>
+                <li><strong>Upload Image:</strong> Select a screenshot image using the file input above</li>
+                <li><strong>Set Scaling:</strong> Enter target width and height for coordinate scaling and click "Apply Scaling"</li>
+                <li><strong>Grid Controls:</strong> Adjust grid size and opacity using sliders, or toggle grid visibility</li>
+                <li><strong>View Mode:</strong> Hover over the image to see both actual and scaled coordinates in a transparent popup</li>
+                <li><strong>Crop Mode:</strong> Click "Enable Crop Mode" to switch to rectangle selection mode</li>
+                <li><strong>Draw Selection:</strong> In crop mode, click and drag to draw a selection rectangle on the image</li>
+                <li><strong>Crop Dialog:</strong> After drawing, a dialog shows coordinates and dimensions with auto-generated filename</li>
+                <li><strong>Download:</strong> Confirm to download the cropped area as PNG, or cancel to discard selection</li>
+                <li><strong>Filename Format:</strong> Default naming: YYYY-MM-DD_HH-MM-SS_x_y_width_height (all coordinates are scaled)</li>
             </ul>
         </div>
     </div>
@@ -188,6 +318,12 @@
         let gridEnabled = true;
         let gridSize = 50;
         let gridOpacity = 0.3;
+        let cropMode = false;
+        let isDrawing = false;
+        let startX = 0;
+        let startY = 0;
+        let currentSelection = null;
+        let selectionDiv = null;
 
         // Initialize event listeners
         document.getElementById('imageInput').addEventListener('change', handleImageUpload);
@@ -225,6 +361,8 @@
             canvas.addEventListener('mousemove', handleMouseMove);
             canvas.addEventListener('mouseenter', showCoordinates);
             canvas.addEventListener('mouseleave', hideCoordinates);
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mouseup', handleMouseUp);
 
             // Initialize target dimensions
             applyScaling();
@@ -280,32 +418,208 @@
             const scaledX = Math.round(mouseX * scaleX);
             const scaledY = Math.round(mouseY * scaleY);
 
-            // Update coordinate display
-            const display = document.getElementById('coordinateDisplay');
-            display.innerHTML = `
-                <div>Image: (${mouseX}, ${mouseY})</div>
-                <div>Scaled: (${scaledX}, ${scaledY})</div>
-            `;
+            // Update coordinate display (only in view mode)
+            if (!cropMode) {
+                const display = document.getElementById('coordinateDisplay');
+                display.innerHTML = `
+                    <div>Image: (${mouseX}, ${mouseY})</div>
+                    <div>Scaled: (${scaledX}, ${scaledY})</div>
+                `;
 
-            // Position the display near the cursor
-            const containerRect = document.getElementById('imageContainer').getBoundingClientRect();
-            const offsetX = event.clientX - containerRect.left + 15; // 15px offset from cursor
-            const offsetY = event.clientY - containerRect.top - 60; // Above cursor
+                // Position the display near the cursor
+                const containerRect = document.getElementById('imageContainer').getBoundingClientRect();
+                const offsetX = event.clientX - containerRect.left + 15;
+                const offsetY = event.clientY - containerRect.top - 60;
 
-            // Keep popup within container bounds
-            const maxX = containerRect.width - display.offsetWidth - 10;
-            const maxY = containerRect.height - display.offsetHeight - 10;
+                // Keep popup within container bounds
+                const maxX = containerRect.width - display.offsetWidth - 10;
+                const maxY = containerRect.height - display.offsetHeight - 10;
 
-            display.style.left = Math.min(Math.max(offsetX, 10), maxX) + 'px';
-            display.style.top = Math.max(offsetY, 10) + 'px';
+                display.style.left = Math.min(Math.max(offsetX, 10), maxX) + 'px';
+                display.style.top = Math.max(offsetY, 10) + 'px';
+            }
+
+            // Handle crop selection drawing
+            if (cropMode && isDrawing) {
+                const currentX = (event.clientX - rect.left);
+                const currentY = (event.clientY - rect.top);
+
+                updateSelection(
+                    Math.min(startX, currentX),
+                    Math.min(startY, currentY),
+                    Math.abs(currentX - startX),
+                    Math.abs(currentY - startY)
+                );
+            }
         }
 
         function showCoordinates() {
-            document.getElementById('coordinateDisplay').classList.add('show');
+            if (!cropMode) {
+                document.getElementById('coordinateDisplay').classList.add('show');
+            }
         }
 
         function hideCoordinates() {
             document.getElementById('coordinateDisplay').classList.remove('show');
+        }
+
+        function handleMouseDown(event) {
+            if (!cropMode) return;
+
+            const rect = canvas.getBoundingClientRect();
+            startX = event.clientX - rect.left;
+            startY = event.clientY - rect.top;
+            isDrawing = true;
+
+            // Remove existing selection
+            clearSelection();
+
+            // Create new selection div
+            selectionDiv = document.createElement('div');
+            selectionDiv.className = 'selection-rectangle';
+            document.getElementById('imageContainer').appendChild(selectionDiv);
+        }
+
+        function handleMouseUp(event) {
+            if (!cropMode || !isDrawing) return;
+
+            isDrawing = false;
+
+            // Calculate final selection in image coordinates
+            const rect = canvas.getBoundingClientRect();
+            const endX = event.clientX - rect.left;
+            const endY = event.clientY - rect.top;
+
+            const x = Math.min(startX, endX);
+            const y = Math.min(startY, endY);
+            const width = Math.abs(endX - startX);
+            const height = Math.abs(endY - startY);
+
+            // Convert to image coordinates
+            const imageX = Math.round(x * (canvas.width / rect.width));
+            const imageY = Math.round(y * (canvas.height / rect.height));
+            const imageWidth = Math.round(width * (canvas.width / rect.width));
+            const imageHeight = Math.round(height * (canvas.height / rect.height));
+
+            // Only show dialog if selection has meaningful size
+            if (imageWidth > 5 && imageHeight > 5) {
+                currentSelection = {
+                    x: imageX,
+                    y: imageY,
+                    width: imageWidth,
+                    height: imageHeight
+                };
+                showCropDialog();
+            } else {
+                clearSelection();
+            }
+        }
+
+        function updateSelection(x, y, width, height) {
+            if (selectionDiv) {
+                selectionDiv.style.left = x + 'px';
+                selectionDiv.style.top = y + 'px';
+                selectionDiv.style.width = width + 'px';
+                selectionDiv.style.height = height + 'px';
+            }
+        }
+
+        function clearSelection() {
+            if (selectionDiv) {
+                selectionDiv.remove();
+                selectionDiv = null;
+            }
+            currentSelection = null;
+        }
+
+        function showCropDialog() {
+            if (!currentSelection) return;
+
+            // Calculate scaled coordinates
+            const scaleX = targetWidth / canvas.width;
+            const scaleY = targetHeight / canvas.height;
+            const scaledX = Math.round(currentSelection.x * scaleX);
+            const scaledY = Math.round(currentSelection.y * scaleY);
+            const scaledWidth = Math.round(currentSelection.width * scaleX);
+            const scaledHeight = Math.round(currentSelection.height * scaleY);
+
+            // Generate default filename
+            const now = new Date();
+            const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' +
+                            now.toTimeString().split(' ')[0].replace(/:/g, '-');
+            const defaultName = `${timestamp}_${scaledX}_${scaledY}_${scaledWidth}_${scaledHeight}`;
+
+            // Update modal content
+            document.getElementById('coordinateInfo').innerHTML = `
+                <div><strong>Image Coordinates:</strong></div>
+                <div>Position: (${currentSelection.x}, ${currentSelection.y})</div>
+                <div>Size: ${currentSelection.width} × ${currentSelection.height}</div>
+                <div><strong>Scaled Coordinates:</strong></div>
+                <div>Position: (${scaledX}, ${scaledY})</div>
+                <div>Size: ${scaledWidth} × ${scaledHeight}</div>
+            `;
+
+            document.getElementById('cropName').value = defaultName;
+            document.getElementById('cropModal').classList.add('show');
+        }
+
+        function cancelCrop() {
+            document.getElementById('cropModal').classList.remove('show');
+            clearSelection();
+        }
+
+        function confirmCrop() {
+            if (!currentSelection || !img) return;
+
+            const filename = document.getElementById('cropName').value.trim() || 'crop';
+
+            // Create a temporary canvas for cropping
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCanvas.width = currentSelection.width;
+            tempCanvas.height = currentSelection.height;
+
+            // Draw the cropped portion
+            tempCtx.drawImage(
+                img,
+                currentSelection.x, currentSelection.y, currentSelection.width, currentSelection.height,
+                0, 0, currentSelection.width, currentSelection.height
+            );
+
+            // Convert to blob and download
+            tempCanvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename + '.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+
+            // Close modal and clear selection
+            document.getElementById('cropModal').classList.remove('show');
+            clearSelection();
+        }
+
+        function toggleMode() {
+            cropMode = !cropMode;
+            const button = document.getElementById('modeToggle');
+            const coordinateDisplay = document.getElementById('coordinateDisplay');
+
+            if (cropMode) {
+                button.textContent = 'Exit Crop Mode';
+                button.classList.add('crop-mode');
+                canvas.style.cursor = 'crosshair';
+                coordinateDisplay.classList.remove('show');
+            } else {
+                button.textContent = 'Enable Crop Mode';
+                button.classList.remove('crop-mode');
+                canvas.style.cursor = 'crosshair';
+                clearSelection();
+            }
         }
 
         function applyScaling() {

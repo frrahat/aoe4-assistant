@@ -180,21 +180,38 @@ The project includes a specialized tool for analyzing screenshots and determinin
 - Upload and analyze game screenshots
 - Interactive grid overlay for precise coordinate identification
 - Target resolution scaling (e.g., scale coordinates from a 2560x1440 screenshot to 1920x1080)
-- Live coordinate display with mouse hover
-- Adjustable grid size and opacity
+- **Two operation modes**: View mode for coordinate inspection and Crop mode for area selection
+- Live coordinate display with mouse hover in View mode
+- Rectangle selection and cropping functionality in Crop mode
+- Adjustable grid size and opacity controls
+- Auto-generated filenames with scaled coordinates (format: YYYY-MM-DD_HH-MM-SS_x_y_width_height)
+- Download cropped regions as PNG files
 - Both actual image coordinates and scaled coordinates display
 
 **Usage**:
+
+*View Mode (Default):*
 1. Open `tools/screenshot_grid_coordinate_analyzer.html` in a web browser
 2. Upload a screenshot of your Age of Empires IV interface
-3. Set your target resolution (default: 1920x1080)
-4. Hover over the image to see coordinates
-5. Use the scaled coordinates in your configuration
+3. Set your target resolution (default: 1920x1080) and click "Apply Scaling"
+4. Adjust grid settings using the sliders if needed
+5. Hover over the image to see both actual image coordinates and scaled coordinates
+6. Use the scaled coordinates in your configuration files
+
+*Crop Mode:*
+1. Click "Enable Crop Mode" to switch to rectangle selection mode
+2. Click and drag on the image to draw a selection rectangle
+3. A dialog will appear showing the coordinates and dimensions of your selection
+4. Enter a custom filename or use the auto-generated one
+5. Click "Download Crop" to save the selected area as a PNG file
+6. The filename includes scaled coordinates for easy reference
 
 This tool is particularly useful when:
 - Setting up screen capture regions for new civilizations
 - Adapting coordinates for different screen resolutions
 - Fine-tuning template matching areas
+- Creating template images for specific UI elements
+- Extracting test samples from game screenshots
 - Debugging coordinate-related issues
 
 ## Project Structure
