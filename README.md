@@ -14,7 +14,7 @@ A real-time screen monitoring tool for Age of Empires IV that helps players trac
 ## Supported Civilizations
 
 - Abbasid Dynasty
-- Ayyubids  
+- Ayyubids
 - Byzantines
 - Chinese
 - Delhi Sultanate
@@ -168,6 +168,35 @@ Each civilization has pre-configured screen coordinates for optimal detection:
 - Japanese: `{x: 11, y: 655}` (different UI layout)
 - Abbasid/Ayyubids: `{x: 11, y: 729}`
 
+## Tools
+
+### Screenshot Grid Coordinate Analyzer
+
+The project includes a specialized tool for analyzing screenshots and determining precise coordinates for screen capture regions:
+
+**Location**: `tools/screenshot_grid_coordinate_analyzer.html`
+
+**Features**:
+- Upload and analyze game screenshots
+- Interactive grid overlay for precise coordinate identification
+- Target resolution scaling (e.g., scale coordinates from a 2560x1440 screenshot to 1920x1080)
+- Live coordinate display with mouse hover
+- Adjustable grid size and opacity
+- Both actual image coordinates and scaled coordinates display
+
+**Usage**:
+1. Open `tools/screenshot_grid_coordinate_analyzer.html` in a web browser
+2. Upload a screenshot of your Age of Empires IV interface
+3. Set your target resolution (default: 1920x1080)
+4. Hover over the image to see coordinates
+5. Use the scaled coordinates in your configuration
+
+This tool is particularly useful when:
+- Setting up screen capture regions for new civilizations
+- Adapting coordinates for different screen resolutions
+- Fine-tuning template matching areas
+- Debugging coordinate-related issues
+
 ## Project Structure
 
 ```
@@ -180,11 +209,13 @@ aoe4_assistant/
 │   ├── templates/villagers/               # Civilization-specific villager icons
 │   └── samples/production_queue/          # Test images for development
 ├── matcher/                               # OpenCV template matching utilities
-├── recorder/                              # Screen capture functionality  
+├── recorder/                              # Screen capture functionality
 ├── streamer/                              # Web interface for configuration
 │   ├── client/index.html                  # Web UI
 │   └── server/server.py                   # Flask backend
 ├── third_party/json.hpp                   # JSON parsing library
+├── tools/
+│   └── screenshot_grid_coordinate_analyzer.html # Coordinate analysis tool
 ├── build_and_run.bat                      # Build and run script
 └── README.md                              # This file
 ```
@@ -197,9 +228,9 @@ aoe4_assistant/
 
 3. **Production Detection**: Analyzes the production queue area to determine if villagers are being produced
 
-4. **Audio Notifications**: 
+4. **Audio Notifications**:
    - Info sound: Monitoring started
-   - Warning sound: Monitoring stopped  
+   - Warning sound: Monitoring stopped
    - Error sound: No villager production detected
 
 5. **Web Interface**: Real-time configuration and debugging through a Flask web server
