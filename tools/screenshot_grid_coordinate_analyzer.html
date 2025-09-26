@@ -242,13 +242,13 @@
 <body>
     <div class="container">
         <h1>Screenshot Grid Coordinate Analyzer</h1>
-
+        
         <div class="controls">
             <div class="control-group">
                 <label>Upload Image:</label>
                 <input type="file" id="imageInput" accept="image/*">
             </div>
-
+            
             <div class="control-group">
                 <label>Target Width:</label>
                 <input type="number" id="targetWidth" value="1920" min="1">
@@ -256,17 +256,17 @@
                 <input type="number" id="targetHeight" value="1080" min="1">
                 <button onclick="applyScaling()">Apply Scaling</button>
             </div>
-
+            
             <div class="control-group">
                 <div class="grid-controls">
                     <label>Grid Size:</label>
                     <input type="range" id="gridSize" min="10" max="100" value="50">
                     <span id="gridSizeValue">50px</span>
-
+                    
                     <label>Grid Opacity:</label>
                     <input type="range" id="gridOpacity" min="0" max="100" value="30">
                     <span id="gridOpacityValue">30%</span>
-
+                    
                     <button onclick="toggleGrid()">Toggle Grid</button>
                     <button id="modeToggle" class="mode-toggle" onclick="toggleMode()">Enable Crop Mode</button>
                 </div>
@@ -349,34 +349,34 @@
         function setupCanvas() {
             canvas = document.getElementById('imageCanvas');
             ctx = canvas.getContext('2d');
-
+            
             // Set canvas size to image size
             canvas.width = img.width;
             canvas.height = img.height;
-
+            
             // Show the container
             document.getElementById('imageContainer').classList.remove('hidden');
-
+            
             // Setup mouse events
             canvas.addEventListener('mousemove', handleMouseMove);
             canvas.addEventListener('mouseenter', showCoordinates);
             canvas.addEventListener('mouseleave', hideCoordinates);
             canvas.addEventListener('mousedown', handleMouseDown);
             canvas.addEventListener('mouseup', handleMouseUp);
-
+            
             // Initialize target dimensions
             applyScaling();
         }
 
         function drawImage() {
             if (!img || !ctx) return;
-
+            
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+            
             // Draw image
             ctx.drawImage(img, 0, 0);
-
+            
             // Draw grid if enabled
             if (gridEnabled) {
                 drawGrid();
@@ -407,43 +407,41 @@
 
         function handleMouseMove(event) {
             if (!canvas) return;
-
+            
             const rect = canvas.getBoundingClientRect();
             const mouseX = Math.round((event.clientX - rect.left) * (canvas.width / rect.width));
             const mouseY = Math.round((event.clientY - rect.top) * (canvas.height / rect.height));
-
+            
             // Calculate scaled coordinates
             const scaleX = targetWidth / canvas.width;
             const scaleY = targetHeight / canvas.height;
             const scaledX = Math.round(mouseX * scaleX);
             const scaledY = Math.round(mouseY * scaleY);
-
-            // Update coordinate display (only in view mode)
-            if (!cropMode) {
-                const display = document.getElementById('coordinateDisplay');
-                display.innerHTML = `
-                    <div>Image: (${mouseX}, ${mouseY})</div>
-                    <div>Scaled: (${scaledX}, ${scaledY})</div>
-                `;
-
-                // Position the display near the cursor
-                const containerRect = document.getElementById('imageContainer').getBoundingClientRect();
-                const offsetX = event.clientX - containerRect.left + 15;
-                const offsetY = event.clientY - containerRect.top - 60;
-
-                // Keep popup within container bounds
-                const maxX = containerRect.width - display.offsetWidth - 10;
-                const maxY = containerRect.height - display.offsetHeight - 10;
-
-                display.style.left = Math.min(Math.max(offsetX, 10), maxX) + 'px';
-                display.style.top = Math.max(offsetY, 10) + 'px';
-            }
-
+            
+            // Update coordinate display
+            const display = document.getElementById('coordinateDisplay');
+            display.innerHTML = `
+                <div>Image: (${mouseX}, ${mouseY})</div>
+                <div>Scaled: (${scaledX}, ${scaledY})</div>
+            `;
+            
+            // Position the display near the cursor
+            const containerRect = document.getElementById('imageContainer').getBoundingClientRect();
+            const offsetX = event.clientX - containerRect.left + 15;
+            const offsetY = event.clientY - containerRect.top - 60;
+            
+            // Keep popup within container bounds
+            const maxX = containerRect.width - display.offsetWidth - 10;
+            const maxY = containerRect.height - display.offsetHeight - 10;
+            
+            display.style.left = Math.min(Math.max(offsetX, 10), maxX) + 'px';
+            display.style.top = Math.max(offsetY, 10) + 'px';
+            
             // Handle crop selection drawing
             if (cropMode && isDrawing) {
                 const currentX = (event.clientX - rect.left);
                 const currentY = (event.clientY - rect.top);
-
+                
                 updateSelection(
                     Math.min(startX, currentX),
                     Math.min(startY, currentY),
@@ -454,9 +452,7 @@
         }
 
         function showCoordinates() {
-            if (!cropMode) {
-                document.getElementById('coordinateDisplay').classList.add('show');
-            }
+            document.getElementById('coordinateDisplay').classList.add('show');
         }
 
         function hideCoordinates() {
@@ -465,15 +461,15 @@
 
         function handleMouseDown(event) {
             if (!cropMode) return;
-
+            
             const rect = canvas.getBoundingClientRect();
             startX = event.clientX - rect.left;
             startY = event.clientY - rect.top;
             isDrawing = true;
-
+            
             // Remove existing selection
             clearSelection();
-
+            
             // Create new selection div
             selectionDiv = document.createElement('div');
             selectionDiv.className = 'selection-rectangle';
@@ -482,25 +478,25 @@
 
         function handleMouseUp(event) {
             if (!cropMode || !isDrawing) return;
-
+            
             isDrawing = false;
-
+            
             // Calculate final selection in image coordinates
             const rect = canvas.getBoundingClientRect();
             const endX = event.clientX - rect.left;
             const endY = event.clientY - rect.top;
-
+            
             const x = Math.min(startX, endX);
             const y = Math.min(startY, endY);
             const width = Math.abs(endX - startX);
             const height = Math.abs(endY - startY);
-
+            
             // Convert to image coordinates
             const imageX = Math.round(x * (canvas.width / rect.width));
             const imageY = Math.round(y * (canvas.height / rect.height));
             const imageWidth = Math.round(width * (canvas.width / rect.width));
             const imageHeight = Math.round(height * (canvas.height / rect.height));
-
+            
             // Only show dialog if selection has meaningful size
             if (imageWidth > 5 && imageHeight > 5) {
                 currentSelection = {
@@ -534,7 +530,7 @@
 
         function showCropDialog() {
             if (!currentSelection) return;
-
+            
             // Calculate scaled coordinates
             const scaleX = targetWidth / canvas.width;
             const scaleY = targetHeight / canvas.height;
@@ -542,13 +538,13 @@
             const scaledY = Math.round(currentSelection.y * scaleY);
             const scaledWidth = Math.round(currentSelection.width * scaleX);
             const scaledHeight = Math.round(currentSelection.height * scaleY);
-
+            
             // Generate default filename
             const now = new Date();
-            const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' +
+            const timestamp = now.toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + 
                             now.toTimeString().split(' ')[0].replace(/:/g, '-');
             const defaultName = `${timestamp}_${scaledX}_${scaledY}_${scaledWidth}_${scaledHeight}`;
-
+            
             // Update modal content
             document.getElementById('coordinateInfo').innerHTML = `
                 <div><strong>Image Coordinates:</strong></div>
@@ -558,7 +554,7 @@
                 <div>Position: (${scaledX}, ${scaledY})</div>
                 <div>Size: ${scaledWidth} × ${scaledHeight}</div>
             `;
-
+            
             document.getElementById('cropName').value = defaultName;
             document.getElementById('cropModal').classList.add('show');
         }
@@ -570,23 +566,23 @@
 
         function confirmCrop() {
             if (!currentSelection || !img) return;
-
+            
             const filename = document.getElementById('cropName').value.trim() || 'crop';
-
+            
             // Create a temporary canvas for cropping
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
-
+            
             tempCanvas.width = currentSelection.width;
             tempCanvas.height = currentSelection.height;
-
+            
             // Draw the cropped portion
             tempCtx.drawImage(
                 img,
                 currentSelection.x, currentSelection.y, currentSelection.width, currentSelection.height,
                 0, 0, currentSelection.width, currentSelection.height
             );
-
+            
             // Convert to blob and download
             tempCanvas.toBlob((blob) => {
                 const url = URL.createObjectURL(blob);
@@ -597,8 +593,7 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-            }, 'image/png');
-
+            }, 'image/png');            
             // Close modal and clear selection
             document.getElementById('cropModal').classList.remove('show');
             clearSelection();
@@ -608,12 +603,11 @@
             cropMode = !cropMode;
             const button = document.getElementById('modeToggle');
             const coordinateDisplay = document.getElementById('coordinateDisplay');
-
+            
             if (cropMode) {
                 button.textContent = 'Exit Crop Mode';
                 button.classList.add('crop-mode');
                 canvas.style.cursor = 'crosshair';
-                coordinateDisplay.classList.remove('show');
             } else {
                 button.textContent = 'Enable Crop Mode';
                 button.classList.remove('crop-mode');
