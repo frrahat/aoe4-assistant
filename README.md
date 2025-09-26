@@ -99,6 +99,11 @@ This ensures all MSVC environment variables (include paths, library paths, etc.)
    build_and_run.bat
    ```
 
+4. **Build tools** (optional):
+   ```bash
+   build_and_run.bat tools
+   ```
+
 ## Usage
 
 ### Basic Usage
@@ -136,6 +141,13 @@ build_and_run.bat test
 ```
 Runs only the villager production checker tests.
 
+#### Tools Building
+```bash
+build_and_run.bat tools
+```
+Builds all development tools in the `tools/` directory, including:
+- **Screenshot Taker**: Standalone tool for capturing screenshots with Numpad '*' hotkey
+
 ### Web Configuration Interface
 
 When running in streaming mode, access `http://localhost:5000` to:
@@ -169,6 +181,35 @@ Each civilization has pre-configured screen coordinates for optimal detection:
 - Abbasid/Ayyubids: `{x: 11, y: 729}`
 
 ## Tools
+
+### Building Tools
+
+All development tools can be built using:
+```bash
+build_and_run.bat tools
+```
+
+This builds all tools in the `tools/` directory and places executables in their respective `build/` folders.
+
+### Screenshot Taker
+
+A standalone screenshot capture tool that allows you to take screenshots using the Numpad '*' hotkey.
+
+**Location**: `tools/screenshot_taker/`
+**Executable**: `tools/screenshot_taker/build/screenshot_taker.exe` (after building)
+
+**Features**:
+- Press Numpad '*' to capture full screen screenshots
+- Automatically saves to `temp/screenshots/` directory
+- Timestamped filenames (YYYY-MM-DD_HH-MM-SS_mmm.png)
+- GDI+ integration for high-quality PNG capture
+- Minimal resource usage when idle
+
+**Usage**:
+1. Build the tools: `build_and_run.bat tools`
+2. Run: `tools\screenshot_taker\build\screenshot_taker.exe`
+3. Press Numpad '*' to take screenshots
+4. Press Ctrl+C to exit
 
 ### Screenshot Grid Coordinate Analyzer
 
@@ -231,6 +272,10 @@ aoe4_assistant/
 │   └── server/server.py                   # Flask backend
 ├── third_party/json.hpp                   # JSON parsing library
 ├── tools/
+│   ├── screenshot_taker/                   # Standalone screenshot capture tool
+│   │   ├── main.cpp                        # Main application entry
+│   │   ├── screenshot_taker.h/.cpp         # Screenshot capture functionality
+│   │   └── build/                          # Built executable
 │   └── screenshot_grid_coordinate_analyzer.html # Coordinate analysis tool
 ├── build_and_run.bat                      # Build and run script
 └── README.md                              # This file

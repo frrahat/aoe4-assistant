@@ -4,8 +4,10 @@ setlocal
 REM Parse argument
 set stream=0
 set run_test=0
+set build_tools=0
 if /I "%1"=="test" set run_test=1
-if not "%1"=="" if not "%1"=="test" set stream=%1
+if /I "%1"=="tools" set build_tools=1
+if not "%1"=="" if not "%1"=="test" if not "%1"=="tools" set stream=%1
 
 REM Set OpenCV paths
 set OPENCV_DIR=C:\Users\frrah\Downloads\opencv
@@ -26,6 +28,31 @@ del /q *.exe >nul 2>&1
 
 REM Clone data folder
 xcopy ..\data\ .\data\ /s /e /i /y >nul 2>&1
+
+REM If building tools, build all tools and exit
+if "%1"=="tools" (
+    echo Building tools...
+    
+    REM Build screenshot taker
+    echo Building screenshot taker...
+    pushd ..\tools\screenshot_taker
+    if not exist "..\..\build" mkdir ..\..\build
+    cl.exe /EHsc /Fe:..\..\build\screenshot_taker.exe main.cpp screenshot_taker.cpp /link gdiplus.lib user32.lib gdi32.lib
+    if errorlevel 1 (
+        echo Screenshot taker build failed!
+        popd
+        popd
+        exit /b 1
+    ) else (
+        echo Screenshot taker built successfully: tools\screenshot_taker\build\screenshot_taker.exe
+    )
+    popd
+    
+    REM Future tools can be added here
+    echo All tools built successfully!
+    popd
+    goto :eof
+)
 
 REM If running test, only build and run the test
 if "%1"=="test" (
@@ -59,3 +86,4 @@ REM Usage:
 REM   build_and_run.bat           (builds and runs main project)
 REM   build_and_run.bat 1         (builds and runs main project with stream 1)
 REM   build_and_run.bat test      (builds and runs only the villager production checker test)
+REM   build_and_run.bat tools     (builds all tools in the tools/ directory)
