@@ -92,26 +92,11 @@ struct CivilizationRecordingParams {
 std::map<Civilization, CivilizationRecordingParams> civilizationParamsForProductionQueue = {
     {Civilization::Abbasid, {11, 729}},
     {Civilization::Ayyubids, {11, 729}},
-    {Civilization::Byzantines, {11, 733}},
-    {Civilization::Chinese, {11, 733}},
-    {Civilization::Delhi_Sultanate, {11, 733}},
-    {Civilization::English, {11, 733}},
-    {Civilization::French, {11, 733}},
-    {Civilization::Holy_Roman_Empire, {11, 733}},
     {Civilization::Japanese, {11, 655}},
-    {Civilization::Jeanne_D_Arc, {11, 733}},
-    {Civilization::Malians, {11, 733}},
-    {Civilization::Mongols, {11, 733}},
-    {Civilization::Order_Of_The_Dragon, {11, 733}},
-    {Civilization::Ottomans, {11, 733}},
-    {Civilization::Rus, {11, 733}},
-    {Civilization::Zhu_Xi, {11, 733}}
 };
 
 std::map<Civilization, CivilizationRecordingParams> civilizationParamsForIdleStatus = {
-    // {Civilization::Abbasid, {147, 861}},
-    // {Civilization::Ayyubids, {147, 861}},
-    // {Civilization::Byzantines, {147, 861}},
+    {Civilization::Byzantines, {147, 810}},
 };
 
 struct RecordingParams {
