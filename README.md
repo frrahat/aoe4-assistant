@@ -199,12 +199,11 @@ The project includes a specialized tool for analyzing screenshots and determinin
 6. Use the scaled coordinates in your configuration files
 
 *Crop Mode:*
-1. Click "Enable Crop Mode" to switch to rectangle selection mode
-2. Click and drag on the image to draw a selection rectangle
-3. A dialog will appear showing the coordinates and dimensions of your selection
+1. Click and drag on the image to draw a selection rectangle
+2. A dialog will appear showing the coordinates and dimensions of your selection
+3. The filename includes scaled coordinates for easy reference
 4. Enter a custom filename or use the auto-generated one
 5. Click "Download Crop" to save the selected area as a PNG file
-6. The filename includes scaled coordinates for easy reference
 
 This tool is particularly useful when:
 - Setting up screen capture regions for new civilizations

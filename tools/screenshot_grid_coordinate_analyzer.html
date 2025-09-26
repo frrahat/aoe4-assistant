@@ -181,29 +181,6 @@
             background: #5a6268;
         }
 
-        .mode-toggle {
-            margin-left: 20px;
-            padding: 8px 16px;
-            background: #28a745;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .mode-toggle:hover {
-            background: #218838;
-        }
-
-        .mode-toggle.crop-mode {
-            background: #dc3545;
-        }
-
-        .mode-toggle.crop-mode:hover {
-            background: #c82333;
-        }
-
         .info {
             margin-top: 15px;
             padding: 10px;
@@ -268,7 +245,6 @@
                     <span id="gridOpacityValue">30%</span>
                     
                     <button onclick="toggleGrid()">Toggle Grid</button>
-                    <button id="modeToggle" class="mode-toggle" onclick="toggleMode()">Enable Crop Mode</button>
                 </div>
             </div>
         </div>
@@ -304,8 +280,8 @@
                 <li><strong>Set Scaling:</strong> Enter target width and height for coordinate scaling and click "Apply Scaling"</li>
                 <li><strong>Grid Controls:</strong> Adjust grid size and opacity using sliders, or toggle grid visibility</li>
                 <li><strong>View Mode:</strong> Hover over the image to see both actual and scaled coordinates in a transparent popup</li>
-                <li><strong>Crop Mode:</strong> Click "Enable Crop Mode" to switch to rectangle selection mode</li>
-                <li><strong>Draw Selection:</strong> In crop mode, click and drag to draw a selection rectangle on the image</li>
+                <li><strong>Crop Selection:</strong> Click and drag anywhere on the image to draw a selection rectangle</li>
+                <li><strong>Real-time Feedback:</strong> While dragging, see both position and selection size in the popup</li>
                 <li><strong>Crop Dialog:</strong> After drawing, a dialog shows coordinates and dimensions with auto-generated filename</li>
                 <li><strong>Download:</strong> Confirm to download the cropped area as PNG, or cancel to discard selection</li>
                 <li><strong>Filename Format:</strong> Default naming: YYYY-MM-DD_HH-MM-SS_x_y_width_height (all coordinates are scaled)</li>
@@ -318,7 +294,6 @@
         let gridEnabled = true;
         let gridSize = 50;
         let gridOpacity = 0.3;
-        let cropMode = false;
         let isDrawing = false;
         let startX = 0;
         let startY = 0;
@@ -427,7 +402,7 @@
             `;
             
             // Handle crop selection drawing and add size info
-            if (cropMode && isDrawing) {
+            if (isDrawing) {
                 const currentX = event.clientX - rect.left;
                 const currentY = event.clientY - rect.top;
                 
@@ -482,8 +457,6 @@
         }
 
         function handleMouseDown(event) {
-            if (!cropMode) return;
-            
             event.preventDefault();
             
             const rect = canvas.getBoundingClientRect();
@@ -501,7 +474,7 @@
         }
 
         function handleMouseUp(event) {
-            if (!cropMode || !isDrawing) return;
+            if (!isDrawing) return;
             
             isDrawing = false;
             
@@ -622,22 +595,6 @@
             // Close modal and clear selection
             document.getElementById('cropModal').classList.remove('show');
             clearSelection();
-        }
-
-        function toggleMode() {
-            cropMode = !cropMode;
-            const button = document.getElementById('modeToggle');
-            
-            if (cropMode) {
-                button.textContent = 'Exit Crop Mode';
-                button.classList.add('crop-mode');
-                canvas.style.cursor = 'crosshair';
-            } else {
-                button.textContent = 'Enable Crop Mode';
-                button.classList.remove('crop-mode');
-                canvas.style.cursor = 'crosshair';
-                clearSelection();
-            }
         }
 
         function applyScaling() {
