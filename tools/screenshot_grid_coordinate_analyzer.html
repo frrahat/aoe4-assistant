@@ -418,12 +418,47 @@
             const scaledX = Math.round(mouseX * scaleX);
             const scaledY = Math.round(mouseY * scaleY);
             
-            // Update coordinate display
             const display = document.getElementById('coordinateDisplay');
-            display.innerHTML = `
+            
+            // Always update basic coordinates
+            let displayHTML = `
                 <div>Image: (${mouseX}, ${mouseY})</div>
                 <div>Scaled: (${scaledX}, ${scaledY})</div>
             `;
+            
+            // Handle crop selection drawing and add size info
+            if (cropMode && isDrawing) {
+                const currentX = event.clientX - rect.left;
+                const currentY = event.clientY - rect.top;
+                
+                // Calculate rectangle dimensions in screen coordinates
+                const rectWidth = Math.abs(currentX - startX);
+                const rectHeight = Math.abs(currentY - startY);
+                
+                // Convert to image coordinates for dimensions
+                const imageRectWidth = Math.round(rectWidth * (canvas.width / rect.width));
+                const imageRectHeight = Math.round(rectHeight * (canvas.height / rect.height));
+                
+                // Calculate scaled dimensions
+                const scaledRectWidth = Math.round(imageRectWidth * scaleX);
+                const scaledRectHeight = Math.round(imageRectHeight * scaleY);
+                
+                // Add size info to display
+                displayHTML += `
+                    <div>Size: ${imageRectWidth} × ${imageRectHeight}</div>
+                    <div>Scaled Size: ${scaledRectWidth} × ${scaledRectHeight}</div>
+                `;
+                
+                // Update visual selection rectangle
+                updateSelection(
+                    Math.min(startX, currentX),
+                    Math.min(startY, currentY),
+                    rectWidth,
+                    rectHeight
+                );
+            }
+            
+            display.innerHTML = displayHTML;
             
             // Position the display near the cursor
             const containerRect = document.getElementById('imageContainer').getBoundingClientRect();
@@ -436,19 +471,6 @@
             
             display.style.left = Math.min(Math.max(offsetX, 10), maxX) + 'px';
             display.style.top = Math.max(offsetY, 10) + 'px';
-            
-            // Handle crop selection drawing
-            if (cropMode && isDrawing) {
-                const currentX = (event.clientX - rect.left);
-                const currentY = (event.clientY - rect.top);
-                
-                updateSelection(
-                    Math.min(startX, currentX),
-                    Math.min(startY, currentY),
-                    Math.abs(currentX - startX),
-                    Math.abs(currentY - startY)
-                );
-            }
         }
 
         function showCoordinates() {
@@ -461,6 +483,8 @@
 
         function handleMouseDown(event) {
             if (!cropMode) return;
+            
+            event.preventDefault();
             
             const rect = canvas.getBoundingClientRect();
             startX = event.clientX - rect.left;
@@ -593,7 +617,8 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-            }, 'image/png');            
+            }, 'image/png');
+            
             // Close modal and clear selection
             document.getElementById('cropModal').classList.remove('show');
             clearSelection();
@@ -602,7 +627,6 @@
         function toggleMode() {
             cropMode = !cropMode;
             const button = document.getElementById('modeToggle');
-            const coordinateDisplay = document.getElementById('coordinateDisplay');
             
             if (cropMode) {
                 button.textContent = 'Exit Crop Mode';
