@@ -15,7 +15,9 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <mmsystem.h>
 #pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "winmm.lib")
 #include "../recorder/recorder.h"
 #include "../third_party/json.hpp"
 #include "villager_production_checker/villager_production_checker.h"
@@ -279,20 +281,84 @@ enum class NotificationCategory {
     Error
 };
 
+struct PreloadedSounds {
+    std::vector<BYTE> infoSound;
+    std::vector<BYTE> warningSound;
+    std::vector<BYTE> errorSound;
+    bool infoLoaded = false;
+    bool warningLoaded = false;
+    bool errorLoaded = false;
+};
+
+PreloadedSounds g_sounds;
+
+// Function to load a sound file into memory
+bool loadSoundFile(const std::string& filename, std::vector<BYTE>& buffer) {
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        return false;
+    }
+    
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    
+    buffer.resize(size);
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
+        buffer.clear();
+        return false;
+    }
+    
+    return true;
+}
+
+// Function to preload all sound files at startup
+void preloadSounds() {
+    std::cout << "Loading custom sound files..." << std::endl;
+    
+    g_sounds.infoLoaded = loadSoundFile("data/sounds/info.wav", g_sounds.infoSound);
+    if (g_sounds.infoLoaded) {
+        std::cout << "  - Loaded info.wav" << std::endl;
+    }
+    
+    g_sounds.warningLoaded = loadSoundFile("data/sounds/warning.wav", g_sounds.warningSound);
+    if (g_sounds.warningLoaded) {
+        std::cout << "  - Loaded warning.wav" << std::endl;
+    }
+    
+    g_sounds.errorLoaded = loadSoundFile("data/sounds/error.wav", g_sounds.errorSound);
+    if (g_sounds.errorLoaded) {
+        std::cout << "  - Loaded error.wav" << std::endl;
+    }
+    
+    if (!g_sounds.infoLoaded && !g_sounds.warningLoaded && !g_sounds.errorLoaded) {
+        std::cout << "  - No custom sound files found, using system sounds" << std::endl;
+    }
+}
+
 void notify(NotificationCategory category) {
-    UINT uType = MB_OK;
     switch (category) {
         case NotificationCategory::Info:
-            uType = MB_OK;
+            if (g_sounds.infoLoaded) {
+                PlaySoundA(reinterpret_cast<LPCSTR>(g_sounds.infoSound.data()), NULL, SND_MEMORY | SND_ASYNC | SND_NODEFAULT);
+            } else {
+                MessageBeep(MB_OK);
+            }
             break;
         case NotificationCategory::Warn:
-            uType = MB_CANCELTRYCONTINUE;
+            if (g_sounds.warningLoaded) {
+                PlaySoundA(reinterpret_cast<LPCSTR>(g_sounds.warningSound.data()), NULL, SND_MEMORY | SND_ASYNC | SND_NODEFAULT);
+            } else {
+                MessageBeep(MB_ICONEXCLAMATION);
+            }
             break;
         case NotificationCategory::Error:
-            uType = MB_ICONHAND;
+            if (g_sounds.errorLoaded) {
+                PlaySoundA(reinterpret_cast<LPCSTR>(g_sounds.errorSound.data()), NULL, SND_MEMORY | SND_ASYNC | SND_NODEFAULT);
+            } else {
+                MessageBeep(MB_ICONHAND);
+            }
             break;
     }
-    MessageBeep(uType);
 }
 
 // Helper to get civilization from integer input
@@ -351,6 +417,9 @@ int main(int argc, char* argv[]) {
         std::cout << "Running in dev mode. Stream: " << stream << std::endl;
     }
 
+    // Preload custom sound files
+    preloadSounds();
+
     std::cout << "Starting screen assistant. Press Numpad '*' to start/stop recording.\n" << std::endl;
 
     // Initialize GDI+
@@ -378,11 +447,10 @@ int main(int argc, char* argv[]) {
                         recParams = getRecordingParams(isDevMode, selectedCivilization);
                         printRecordingParams(recParams);
                     }
-                    notify(NotificationCategory::Info); // Play an alarming sound
                 } else {
                     std::cout << "Recording stopped. Press Numpad '*' to start." << std::endl;
-                    notify(NotificationCategory::Warn); // Play an alarming sound
                 }
+                notify(NotificationCategory::Info); // Play an alarming sound
             }
         }
         if (isRecording) {
